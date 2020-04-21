@@ -26,7 +26,7 @@ def load_df(message):
     return df
 
 
-def add2list(message, input):
+async def add2list(message, input):
     try:
         global df
         df=load_df(message)
@@ -36,7 +36,7 @@ def add2list(message, input):
                 if i not in df['Title'].to_list(): df.loc[df.index.size]= [i] + [message.author]
         print('added')
         save_df(df, message)
-        edit_msg(df2msg(df), message)
+        await edit_msg(df2msg(df), message)
         print('edited')
         response='I added the following entries: %s' % input
         print(response)
@@ -45,7 +45,7 @@ def add2list(message, input):
         print('An error ocurred adding entries to the list')
         return 'Error Adding to entry to the list'
 
-def remove(message, input):
+async def remove(message, input):
     try: 
         global df
         df=load_df(message)
@@ -59,7 +59,7 @@ def remove(message, input):
 
         print('removed')
         save_df(df, message)
-        edit_msg(df2msg(df), message)
+        await edit_msg(df2msg(df), message)
         print('edited')
         response='I removed the following entries: %s' % input
         print(response)

@@ -36,13 +36,13 @@ async def on_message(message):
 
         #with open('movie_list.json','r') as j: movie_list=json.load(j)
 
-        if command==('add'): response = add2list(message, input)
+        if command==('add'): response = await add2list(message, input)
 
-        elif command==('remove'): response = remove(message,input)
+        elif command==('remove'): response = await remove(message,input)
 
-        elif command==('show'): response = df2msg(load_df(message))
+        elif command==('show'): response = await df2msg(load_df(message))
 
-        elif command==('pin'): response = pin_list(message)
+        elif command==('pin'): response = await pin_list(message)
 
         elif command==('help'): response = 'the available commands are "b!add", "b!remove" and "b!show". \nWhen adding or removing entries, include the names after the command. \nTo enter multiple names, separate them with a comma (,) .\n Print this message again with the use of "b!help".'
 
