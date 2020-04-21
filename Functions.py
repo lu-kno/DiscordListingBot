@@ -122,9 +122,9 @@ async def edit_msg(new_content, message):
 def df2msg(df):
     '''This function creates a string using the data from a dataframe formatted for a message'''
     try:
-        msg='```\n'
+        msg='``` \n'
         for i in range(df.index.size): msg=msg + str(i) + '. ' + df.loc[i,'Title'] + '  (by ' + df.loc[i,'AddedBy'] + ')\n'
-        msg=msg+'```'
+        msg=msg+' ```'
         return msg
     except:
         print('The Dataframe could not be converted into a message string. Make sure the Dataframe is formatted correctly')
