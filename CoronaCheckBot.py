@@ -8,11 +8,11 @@ with open('./botpriv.key','r') as k: key=k.readlines()[0]
 #if not os.path.isfile('movie_list.json'):
 #        with open('movie_list.json','w+') as j: json.dump([],j)
 #        movie_list=[]
-#client = discord.Client()
 #if os.path.isfile('pinned_msg.json'):
 #        with open('pinned_msg.json','r') as j: pinned_msg=json.load(j)
 #else: pinned_msg=False
 
+client = discord.Client()
 @client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
