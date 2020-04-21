@@ -69,7 +69,7 @@ def remove(message, input):
         print('An error ocurred removing entries from the list')
         return 'Error removing entry from the list'
 
-def pin_list(message):
+async def pin_list(message):
     '''This Function sends a message with the servers list and pinns it. 
     Aditionally, the reference id for the message, channel and server (guild) are saved 
     to edit the message with every change made'''
@@ -101,7 +101,7 @@ def pin_list(message):
         print('Something went wrong. Message could not be Pinned')
         return 1
 
-def edit_msg(new_content, message):
+async def edit_msg(new_content, message):
     # Maybe convert it to an 'update_pin(message)' function, opening the csv file again?
     '''replace the content of the pinned message of a server with the updated information'''
     try:
