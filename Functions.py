@@ -1,16 +1,17 @@
 import discord
 import pandas as pd
 import json
+import os
 bot=0
 
-class Message:
-    def __init__(self, content):
-        self.guild = 'aguild'
-        self.channel = 'achannel'
-        self.author = 'anauthor'
-        self.content = content
+#class Message:
+#    def __init__(self, content):
+#        self.guild = 'aguild'
+#        self.channel = 'achannel'
+#        self.author = 'anauthor'
+#        self.content = content
 
-test=Message('acontent')
+#test=Message('acontent')
 
 def save_df(df, message):
     df.to_csv('./data//'+message.guild+'.csv', index=0)
@@ -136,8 +137,8 @@ def is_number(s):
     except ValueError:
         return False
 
-df=pd.DataFrame(data={'Title':['sun','moon'],'AddedBy':['Chris','Christi']})
-save_df(df,test)
-pin_list(test)
-add2list(test, ['a', 'b'])
+#df=pd.DataFrame(data={'Title':['sun','moon'],'AddedBy':['Chris','Christi']})
+#save_df(df,test)
+#pin_list(test)
+#add2list(test, ['a', 'b'])
 
