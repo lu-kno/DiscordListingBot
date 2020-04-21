@@ -1,7 +1,7 @@
 import discord
 import json
 import os
-from ../keys/DiscordBotKey.py import key
+from '../keys/DiscordBotKey' import key
 
 if not os.path.isfile('movie_list.json'):
         with open('movie_list.json','w+') as j: json.dump([],j)
