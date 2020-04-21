@@ -24,6 +24,10 @@ async def on_message(message):
         return
 
     if message.content.lower().startswith('b!'):
+        print(message.guild)
+        print(message.channel)
+        print(message.author)
+        print(message.id)
         if ' ' in message.content:
             command = message.content[2:message.content.find(' ')].lower()
             input = message.content[message.content.find(' ')+1:].split(',')
@@ -58,7 +62,7 @@ async def on_message(message):
         #    await msg.pin()
         #    with open('pinned_msg.json','w+') as j: json.dump(msg,j)
 
-	
+
         #if pinned_msg:
         #    new_edit='```'
         #    for i in sorted(movie_list): new_edit=new_edit+'\n'+i
