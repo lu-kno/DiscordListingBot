@@ -16,10 +16,20 @@ def save_df(df, message):
     df.to_csv('./data//'+message.guild+'.csv', index=0)
     print('df saved')
 
+def load_df(message):
+    try: 
+        df=pd.read_csv('./data//'+message.guild+'.csv')
+    except: 
+        df=pd.DataFrame(data={'Title':[],'AddedBy':[]})
+    print('df loaded')
+    return df
+
+
 def add2list(message, input):
     try:
         global df
-        df=pd.read_csv('./data//'+message.guild+'.csv')
+        df=load_df(message)
+
         print('read')
         for i in input:
                 if i not in df['Title'].to_list(): df.loc[df.index.size]= [i] + [message.author]
@@ -37,11 +47,13 @@ def add2list(message, input):
 def remove(message, input):
     try: 
         global df
-        df=pd.read_csv('./data//'+message.guild+'.csv')
+        df=load_df(message)
+
         print('read')
         for i in input:
-            if is_number(i) and int(i) in df.index: df=df.drop(i)
-            elif i in df['Title'].to_list(): df.drop(df[df.loc[:,'Title']==i].index)
+            if is_number(i):
+               if int(i) in df.index: df=df.drop(i)
+            elif i in df['Title'].to_list(): df=df.drop(df[df.loc[:,'Title']==i].index)
         df=df.reset_index(drop=1)
 
         print('removed')
@@ -69,11 +81,11 @@ def pin_list(message):
         msg = df2msg(df)
         if bot: 
             print('Message will be pinned')
-        #    the_msg = await message.channel.send(msg)
-        #    await the_msg.pin()
-        #    pin_info={'Message_Id': the_msg.id,
-        #              'Channel_Id': the_msg.channel,
-        #              'Server_Id': the_msg.guild}
+            the_msg = await message.channel.send(msg)   #
+            await the_msg.pin()                         #
+            pin_info={'Message_Id': the_msg.id,         #
+                      'Channel_Id': the_msg.channel,    #
+                      'Server_Id': the_msg.guild}       #
         else: 
             pin_info={'Message_Id': 'the_msg.id',
                         'Channel_Id': 'the_msg.channel',
@@ -92,14 +104,13 @@ def edit_msg(new_content, message):
     # Maybe convert it to an 'update_pin(message)' function, opening the csv file again?
     '''replace the content of the pinned message of a server with the updated information'''
     try:
-        print('11')
         with open('./data//'+message.guild+'_pin.json', 'r') as j: ref=json.load(j)
         print('ref')
         print(ref)
-        #if bot: 
-        #    msg = await client.guilds.get(ref['Server_Id']).channels.get(ref['Channel_Id']).fetch_message(ref['Message_Id'])
-        #    await msg.edit(content)
-        print('New content: %s' % new_content)
+        if bot:                 #
+            msg = await client.guilds.get(ref['Server_Id']).channels.get(ref['Channel_Id']).fetch_message(ref['Message_Id'])
+            await msg.edit(content)
+        print('New content: \n%s' % new_content)
         
         return 
     except:

@@ -1,7 +1,9 @@
 import discord
 import json
 import os
-from '../keys/DiscordBotKey' import key
+import Functions
+
+with open('./botpriv.key','r') as k: key=k.readlines()[0]
 
 if not os.path.isfile('movie_list.json'):
         with open('movie_list.json','w+') as j: json.dump([],j)
@@ -30,42 +32,33 @@ async def on_message(message):
             input=[]
         for i in range(len(input)):input[i]=input[i].strip()
 
-        with open('movie_list.json','r') as j: movie_list=json.load(j)
+        #with open('movie_list.json','r') as j: movie_list=json.load(j)
 
-        if command==('add'):
-                for i in input:
-                     if i not in movie_list: movie_list.append(i)
-                response='I added the following entries: %s' % input
+        if command==('add'): response = add2list(message, input)
 
-        elif command==('remove'):
-                removed=[]
-                for i in input:
-                        if i in movie_list:
-                                movie_list.remove(i)
-                                removed.append(i)
-                response='I removed the following entries: %s' % removed
+        elif command==('remove'): response = remove(message,input)
 
-        elif command==('show') or command==('pin'):
-                response="```"
-                for i in sorted(movie_list): response=response+'\n'+i
-                response=response+"```"
+        elif command==('show'): response = df2msg(load_df(message))
 
-        elif command==('help'):
-            response='the available commands are "b!add", "b!remove" and "b!show". \nWhen adding or removing entries, include the names after the command. \nTo enter multiple names, separate them with a comma (,) .\n Print this message again with the use of "b!help".'
+        elif command==('help'): response = 'the available commands are "b!add", "b!remove" and "b!show". \nWhen adding or removing entries, include the names after the command. \nTo enter multiple names, separate them with a comma (,) .\n Print this message again with the use of "b!help".'
 
         else: response='I didnt understand "%s"' % command
 
-        with open('movie_list.json','w+') as j: json.dump(movie_list,j)
+
         msg = await message.channel.send(response)
 
-        if command == 'pin' and not pinned_msg:
-            await msg.pin()
-            with open('pinned_msg.json','w+') as j: json.dump(msg,j)
+
+        #with open('movie_list.json','w+') as j: json.dump(movie_list,j)
+
+        #if command == 'pin' and not pinned_msg:
+        #    await msg.pin()
+        #    with open('pinned_msg.json','w+') as j: json.dump(msg,j)
 
 	
-        if pinned_msg:
-            new_edit='```'
-            for i in sorted(movie_list): new_edit=new_edit+'\n'+i
-            new_edit=new_edit+'```' 
-            pinned_msg.edit(new_edit)
+        #if pinned_msg:
+        #    new_edit='```'
+        #    for i in sorted(movie_list): new_edit=new_edit+'\n'+i
+        #    new_edit=new_edit+'```' 
+        #    pinned_msg.edit(new_edit)
+
 client.run(key)
