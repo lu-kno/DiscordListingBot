@@ -1,4 +1,4 @@
-#import discord
+import discord
 import pandas as pd
 import json
 bot=0
