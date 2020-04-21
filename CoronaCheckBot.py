@@ -1,7 +1,7 @@
 import discord
 import json
 import os
-import Functions
+from Functions import *
 
 with open('./botpriv.key','r') as k: key=k.readlines()[0]
 
