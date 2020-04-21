@@ -40,7 +40,7 @@ async def on_message(message):
 
         elif command==('remove'): response = await remove(message,input)
 
-        elif command==('show'): response = await df2msg(load_df(message))
+        elif command==('show'): response = df2msg(load_df(message))
 
         elif command==('pin'): response = await pin_list(message)
 
