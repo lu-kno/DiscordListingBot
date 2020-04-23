@@ -3,3 +3,4 @@
 *.sln
 .vs/
 __pycache__/
+data/*.json
