@@ -48,6 +48,8 @@ async def on_message(message):
 
         elif command==('pin'): response = await pin_list(message)
 
+        elif command==('random'): response = await get_random(message)
+
         elif command==('help'): response = 'the available commands are "b!add", "b!remove" and "b!show". \nWhen adding or removing entries, include the names after the command. \nTo enter multiple names, separate them with a comma (,) .\n Print this message again with the use of "b!help".'
 
         else: response='I didnt understand "%s"' % command

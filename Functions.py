@@ -2,6 +2,7 @@ import discord
 import pandas as pd
 import json
 import os
+from random import randrange
 bot=1
 
 class Message:
@@ -47,6 +48,19 @@ async def add2list(message, input):
         return response
     except:
         print('An error ocurred adding entries to the list')
+        return 'Error Adding to entry to the list'
+
+async def get_random(message):
+    try:
+        global df
+        df=load_df(message)
+        r=randrange(len(df))
+        output=str(df.loc[r,'Title']) + '  (by ' + str(df.loc[r,'AddedBy']) + ')'
+        response='Random result:\n```%s```' % output
+        print(response)
+        return response
+    except:
+        print('An error ocurred getting a random entrie from the list')
         return 'Error Adding to entry to the list'
 
 async def remove(message, input):
