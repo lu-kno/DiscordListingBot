@@ -2,6 +2,7 @@ import discord
 import pandas as pd
 import json
 import os
+import re
 from random import randrange
 bot=1
 
@@ -38,12 +39,21 @@ async def add2list(message, input):
     try:
         global df
         df=load_df(message)
+        added=[]
+        ignored=[]
         for i in input:
-                if i not in df['Title'].to_list(): df.loc[df.index.size]= [i] + [message.author]
+                if i.upper() not in [n.upper() for n in df['Title'].to_list()]: 
+                    df.loc[df.index.size]= [i] + [message.author]
+                    added.append(i)
+                else:
+                    ignored.append(i)
         print('added')
         save_df(df, message)
         await edit_msg(df2msg(df), message)
-        response='I added the following entries: %s' % input
+        response=''
+        if added: response=response+'I added the following entries: %s\n' % added
+        if ignored: response=response+'I ignored the double entries: %s\n' % ignored
+        if not response:  'Sorry, I cant come up with a response to that'
         print(response)
         return response
     except:
@@ -60,26 +70,41 @@ async def get_random(message):
         print(response)
         return response
     except:
-        print('An error ocurred getting a random entrie from the list')
-        return 'Error Adding to entry to the list'
+        print('An error ocurred getting a random entry from the list')
+        return 'Error  getting a random entry from the list'
 
 async def remove(message, input):
     try: 
         global df
         df=load_df(message)
-
-        print('read')
+        removed=[]
+        not_found=[]
         for i in input:
             if is_number(i):
-               if int(i) in df.index: df=df.drop(int(i))
-            elif i in df['Title'].to_list(): df=df.drop(df[df.loc[:,'Title']==i].index)
+                if int(i) in df.index: 
+                    print('if works')
+                    removed.append(str(df.loc[int(i),'Title']))
+                    print('1 works')
+                    df=df.drop(int(i))
+                    print('2 works')
+                else:
+                    not_found.append(i)
+            elif i.upper() in [n.upper() for n in df['Title'].to_list()]: 
+                bool_arr=df.loc[:,'Title'].str.match(i, case=False)
+                df=df.drop(bool_arr[bool_arr==True].index)
+                removed.append(i)
+            else: not_found.append(i)
+
         df=df.reset_index(drop=1)
 
         print('removed')
         save_df(df, message)
         await edit_msg(df2msg(df), message)
         print('edited')
-        response='I removed the following entries: %s' % input
+        response=''
+        if removed: response=response+'I removed the following entries: %s\n' % removed
+        if not_found: response=response+'I could not find the following entries: %s\n' % not_found
+        if not response: 'Sorry, I cant come up with a response to that'
         print(response)
         return response
 
@@ -89,7 +114,7 @@ async def remove(message, input):
         return 'Error removing entry from the list'
 
 async def pin_list(message):
-    '''This Function sends a message with the servers list and pinns it. 
+    '''This Function sends a message with the servers list and pins it. 
     Aditionally, the reference id for the message, channel and server (guild) are saved 
     to edit the message with every change made'''
     df=load_df(message)
