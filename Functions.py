@@ -233,11 +233,14 @@ def df2msg(df):
             links=str(df.loc[i,'Link']).split(' ')
             if links[0]: linkstring='[DL](' + ')  [DL]('.join(links) + ')'
             else: linkstring=''
-            msg=msg + '`' + str(i) + '.` ' + str(df.loc[i,'Title']) + '  '
-            msg=add_space(msg) + '`(by ' + str(df.loc[i,'AddedBy']) + ')`  ' 
-            msg=add_space(msg) + linkstring + '\n'
+            msg=add_space(msg + '`' + str(i) + '.') + str(df.loc[i,'Title'])
+            msg=add_space(msg) + '(by ' + str(df.loc[i,'AddedBy']) + ')'
+            msg=add_space(msg) + '`' + linkstring + '\n'
         msg=msg+''
-        embed = discord.Embed(title="Watchlist", colour=discord.Colour(0xcb0929), description=msg,)
+        #embed = discord.Embed(title="Watchlist", colour=discord.Colour(0xcb0929), description=msg,)
+        embed = discord.Embed(colour=discord.Colour(0xCD01BD)).add_field(name="Watchlist", value=msg)
+
+        print(msg)
 
         return embed
     except Exception as e:
@@ -257,9 +260,10 @@ def is_number(s):
     except ValueError:
         return False
 
-def add_space(str):
-    while len(str)%4!=0: str=str+' '
-    return str
+def add_space(s):
+    s=s+' '
+    while len(s[s.rfind('\n')+2:])%4: s=s+' '
+    return s
 
 #df=pd.DataFrame(data={'Title':['sun','moon'],'AddedBy':['Chris','Christi']})
 #save_df(df,test)
