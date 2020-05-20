@@ -118,6 +118,48 @@ async def get_random(message):
         print('An error ocurred getting a random entry from the list')
         return 'Error  getting a random entry from the list'
 
+async def addlink(message, input):
+    try: 
+        global df
+        df=load_df(message)
+        added_link=[]
+        not_found=[]
+        for i in input:
+            links=[]
+            for m in re.finditer('https?://[^\s\n]*', i): links.append(i[m.start():m.end()])
+            if links: i=i[:i.find('http')-1].strip()
+            if is_number(i):
+                if int(i) in df.index: 
+                    added_link.append(str(df.loc[int(i),'Title']))
+                    df.loc[int(i),'Link']=str(df.loc[int(i),'Link']) + ' ' + ' '.join(links)
+                else:
+                    not_found.append(i)
+            elif i.upper() in [n.upper() for n in df['Title'].to_list()]: 
+                bool_arr=df.loc[:,'Title'].str.match(i, case=False)
+                index=bool_arr[bool_arr==True].index
+                df.loc[int(index[0]),'Link']=str(df.loc[int(index[0]),'Link']) + ' ' + ' '.join(links)
+                added_link.append(i)
+            else: not_found.append(i)
+
+        
+
+        print('links added')
+        save_df(df, message)
+        await edit_msg(df2msg(df), message)
+        print('edited')
+        response=''
+        if added_link: response=response+'I added the link(s) for the following entries: %s\n' % added_link
+        if not_found: response=response+'I could not find the following entries: %s\n' % not_found
+        if not response: 'Sorry, I cant come up with a response to that'
+        print(response)
+        return response
+
+    except Exception as e:
+        print(e)
+        print('An error ocurred adding the link to the entry')
+        return 'Error adding link to entry'
+
+
 async def remove(message, input):
     try: 
         global df
@@ -211,14 +253,14 @@ async def edit_msg(new_content, message):
 def df2msg_string(df):
     '''This function creates a string using the data from a dataframe formatted for a message'''
     try:
-        msg='``` \n'
+        msg='```\n'
         for i in range(df.index.size): 
             #linkstring=''
             #for link in df.loc[i,'Link']: linkstring=linkstring+str(link)+' '
             msg=msg + str(i) + '. ' + str(df.loc[i,'Title']) 
             msg=msg + '  (by ' + str(df.loc[i,'AddedBy']) + ')  ' 
             msg=msg + str(df.loc[i,'Link']) + '\n'
-        msg=msg+' ```'
+        msg=msg+'```'
         return msg
     except Exception as e:
         print(e)
@@ -230,16 +272,14 @@ def df2msg(df):
     try:
         msg=''
         for i in range(df.index.size): 
-            links=str(df.loc[i,'Link']).split(' ')
+            links=str(df.loc[i,'Link']).strip().split(' ')
             if links[0]: linkstring='[DL](' + ')  [DL]('.join(links) + ')'
             else: linkstring=''
-            msg=add_space(msg + '`' + str(i) + '.') + str(df.loc[i,'Title'])
-            msg=add_space(msg) + '(by ' + str(df.loc[i,'AddedBy']) + ')'
-            msg=add_space(msg) + '`' + linkstring + '\n'
+            msg=msg + '`' + str(i) + '.` ' + str(df.loc[i,'Title']) + ' '
+            msg=msg + '`(by ' + str(df.loc[i,'AddedBy']) + ')` '
+            msg=msg + linkstring + '\n'
         msg=msg+''
-        #embed = discord.Embed(title="Watchlist", colour=discord.Colour(0xcb0929), description=msg,)
-        embed = discord.Embed(colour=discord.Colour(0xCD01BD)).add_field(name="Watchlist", value=msg)
-
+        embed = discord.Embed(title="Watchlist", colour=discord.Colour(0xCD01BD), description=msg,)
         print(msg)
 
         return embed
@@ -262,7 +302,7 @@ def is_number(s):
 
 def add_space(s):
     s=s+' '
-    while len(s[s.rfind('\n')+2:])%4: s=s+' '
+    while len(s[s.rfind('\n')+1:])%4: s=s+' '
     return s
 
 #df=pd.DataFrame(data={'Title':['sun','moon'],'AddedBy':['Chris','Christi']})

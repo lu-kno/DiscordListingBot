@@ -32,7 +32,7 @@ async def on_message(message):
             command = message.content[2:message.content.find(' ')].lower()
             input = message.content[message.content.find(' ')+1:].split(',')
         else: 
-            command = message.content[2:]
+            command = message.content[2:]   
             input=[]
         for i in range(len(input)):input[i]=input[i].strip()
 
@@ -41,6 +41,8 @@ async def on_message(message):
         #with open('movie_list.json','r') as j: movie_list=json.load(j)
 
         if command==('add'): response = await add2list(message, input)
+
+        if command==('addlink'): response = await addlink(message, input)
 
         elif command==('remove'): response = await remove(message,input)
 
