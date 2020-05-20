@@ -1,5 +1,6 @@
 import discord
 import pandas as pd
+import numpy as np
 import json
 import os
 import re
@@ -15,27 +16,43 @@ class Message:
 
 test=Message('acontent')
 
-def save_df(df, message):
+
+def save_df(df, message, csv=1):
     try:
-        with open('./data//'+str(message.guild)+'.csv', 'w+') as csv: df.to_csv(csv, index=0)
+        #df.to_pickle('./data//'+str(message.guild)+'.pck',compression=None)
+        if csv: 
+            with open('./data//'+str(message.guild)+'.csv', 'w+') as csv: df.to_csv(csv, index=0)
+        else:
+            df.to_json('./data//'+str(message.guild)+'.json', orient='index')
         print('df saved')
         return
     except Exception as e:
         print(e)
-        print('There was a problem saving the Data to the csv file')
+        print('There was a problem saving the Data to the pickle file')
         return 'Error'
 
 def load_df(message):
     try: 
-        with open('./data//'+str(message.guild)+'.csv') as csv: df=pd.read_csv(csv)
+        if os.path.isfile('./data//'+str(message.guild)+'.json'):
+            df=pd.read_pickle('./data//'+str(message.guild)+'.json', orient='index')
+        elif os.path.isfile('./data//'+str(message.guild)+'.pck'):
+            df=pd.read_pickle('./data//'+str(message.guild)+'.pck',compression=None)
+        else:
+            with open('./data//'+str(message.guild)+'.csv') as csv: df=pd.read_csv(csv)
+
         print('df loaded')
-    except: 
-        df=pd.DataFrame(data={'Title':[],'AddedBy':[]})
+    except Exception as e: 
+        print(e)
+        df=pd.DataFrame(data={'Title':[],'AddedBy':[],'Link':[]})
         print('new df created')
+    if 'Link' not in df.columns:
+        l=['' for i in range(df.index.size)]
+        df['Link']=l
+    df = df.replace(np.nan, '', regex=True)
     return df
 
 
-async def add2list(message, input):
+async def add2list_unlinked(message, input):
     try:
         global df
         df=load_df(message)
@@ -44,6 +61,34 @@ async def add2list(message, input):
         for i in input:
                 if i.upper() not in [n.upper() for n in df['Title'].to_list()]: 
                     df.loc[df.index.size]= [i] + [message.author]
+                    added.append(i)
+                else:
+                    ignored.append(i)
+        print('added')
+        save_df(df, message)
+        await edit_msg(df2msg(df), message)
+        response=''
+        if added: response=response+'I added the following entries: %s\n' % added
+        if ignored: response=response+'I ignored the double entries: %s\n' % ignored
+        if not response:  'Sorry, I cant come up with a response to that'
+        print(response)
+        return response
+    except:
+        print('An error ocurred adding entries to the list')
+        return 'Error Adding to entry to the list'
+
+async def add2list(message, input):
+    try:
+        global df
+        df=load_df(message)
+        added=[]
+        ignored=[]
+        for i in input:
+                links=[]
+                for m in re.finditer('https?://[^\s\n]*', i): links.append(i[m.start():m.end()])
+                if links: i=i[:i.find('http')-1].strip()
+                if i.upper() not in [n.upper() for n in df['Title'].to_list()]: 
+                    df.loc[df.index.size]= [i] + [message.author] + [' '.join(links)]
                     added.append(i)
                 else:
                     ignored.append(i)
@@ -82,11 +127,8 @@ async def remove(message, input):
         for i in input:
             if is_number(i):
                 if int(i) in df.index: 
-                    print('if works')
                     removed.append(str(df.loc[int(i),'Title']))
-                    print('1 works')
                     df=df.drop(int(i))
-                    print('2 works')
                 else:
                     not_found.append(i)
             elif i.upper() in [n.upper() for n in df['Title'].to_list()]: 
@@ -123,7 +165,7 @@ async def pin_list(message):
         msg = df2msg(df)
         if bot: 
             print('Message will be pinned')
-            the_msg = await message.channel.send(msg)   #
+            the_msg = await message.channel.send(embed=msg)   #
             await the_msg.pin()                         #
             pin_info={'Message_Id': the_msg.id,         #
                       'Channel_Id': str(the_msg.channel),    #
@@ -152,7 +194,9 @@ async def edit_msg(new_content, message):
         print(ref)
         client=discord.Client()
         msg = await message.channel.fetch_message(ref['Message_Id'])
-        await msg.edit(content=new_content)
+        
+        await msg.edit(embed=new_content)
+        #await msg.edit(content=new_content)
         #await msg
         print('New content: \n%s' % new_content)
         
@@ -164,17 +208,47 @@ async def edit_msg(new_content, message):
         return 'Error 2'
 
 
-def df2msg(df):
+def df2msg_string(df):
     '''This function creates a string using the data from a dataframe formatted for a message'''
     try:
         msg='``` \n'
-        for i in range(df.index.size): msg=msg + str(i) + '. ' + str(df.loc[i,'Title']) + '  (by ' + str(df.loc[i,'AddedBy']) + ')\n'
+        for i in range(df.index.size): 
+            #linkstring=''
+            #for link in df.loc[i,'Link']: linkstring=linkstring+str(link)+' '
+            msg=msg + str(i) + '. ' + str(df.loc[i,'Title']) 
+            msg=msg + '  (by ' + str(df.loc[i,'AddedBy']) + ')  ' 
+            msg=msg + str(df.loc[i,'Link']) + '\n'
         msg=msg+' ```'
         return msg
     except Exception as e:
         print(e)
         print('The Dataframe could not be converted into a message string. Make sure the Dataframe is formatted correctly')
         return '```Error creating message```'
+
+def df2msg(df):
+    '''This function creates a string using the data from a dataframe and returns an embed object to send'''
+    try:
+        msg=''
+        for i in range(df.index.size): 
+            links=str(df.loc[i,'Link']).split(' ')
+            if links[0]: linkstring='[DL](' + ')  [DL]('.join(links) + ')'
+            else: linkstring=''
+            msg=msg + '`' + str(i) + '.` ' + str(df.loc[i,'Title']) + '  '
+            msg=add_space(msg) + '`(by ' + str(df.loc[i,'AddedBy']) + ')`  ' 
+            msg=add_space(msg) + linkstring + '\n'
+        msg=msg+''
+        embed = discord.Embed(title="Watchlist", colour=discord.Colour(0xcb0929), description=msg,)
+
+        return embed
+    except Exception as e:
+        print(e)
+        print('The Dataframe could not be converted into a message string. Make sure the Dataframe is formatted correctly')
+        return '```Error creating message```'
+
+async def show(message):
+    embed=df2msg(load_df(message))
+    await message.channel.send(embed=embed)
+    return 'Here it is'
 
 def is_number(s):
     try:
@@ -183,8 +257,15 @@ def is_number(s):
     except ValueError:
         return False
 
+def add_space(str):
+    while len(str)%4!=0: str=str+' '
+    return str
+
 #df=pd.DataFrame(data={'Title':['sun','moon'],'AddedBy':['Chris','Christi']})
 #save_df(df,test)
 #pin_list(test)
 #add2list(test, ['a', 'b'])
 
+async def test_embed(message):
+    embed=df2msg(load_df(test))
+    await message.channel.send(embed=embed)
