@@ -307,7 +307,7 @@ def df2msg(df):
 async def show(message):
     embed=df2msg(load_df(message))
     await message.channel.send(embed=embed)
-    return 'Here it is'
+    return '** **'
 
 def is_number(s):
     try:
