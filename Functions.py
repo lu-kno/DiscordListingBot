@@ -49,6 +49,7 @@ def load_df(message):
         l=['' for i in range(df.index.size)]
         df['Link']=l
     df = df.replace(np.nan, '', regex=True)
+    df = capitalize(df)
     return df
 
 
@@ -360,5 +361,10 @@ async def test_embed(message):
     embed_list=df2embed(load_df(test))
     for embed in embed_list: await message.channel.send(embed=embed)
 
-async def capitalize(message):
-    df=load_df(message)
+def capitalize(df):
+    df['Title']=df['Title'].apply(cap)
+    return df
+
+def cap(s):
+    return s.capitalize()
+
