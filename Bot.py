@@ -46,6 +46,8 @@ async def on_message(message):
 
         elif command==('remove'): response = await remove(message,input)
 
+        elif command==('sort'): response = await sort(message)
+
         elif command==('embed'): response = await test_embed(message)
 
         elif command==('show'): response = await show(message)

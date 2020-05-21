@@ -159,6 +159,20 @@ async def addlink(message, input):
         print('An error ocurred adding the link to the entry')
         return 'Error adding link to entry'
 
+async def sort(message):
+    try:
+        global df
+        df=load_df(message)
+        df=df.sort_values('Title').reset_index(drop=True)
+        save_df(df, message)
+        edit_msg(df2msg(df),message)
+        await show(message)
+        return 'List has been sorted'
+    except Exception as e:
+        print(e)
+        print('An error ocurred sorting the entries on the list')
+        return 'Error sorting list'
+
 
 async def remove(message, input):
     try: 
