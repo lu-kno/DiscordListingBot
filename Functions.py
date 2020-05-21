@@ -287,11 +287,13 @@ def df2msg(df):
         msg=''
         for i in range(df.index.size): 
             links=str(df.loc[i,'Link']).strip().split(' ')
-            if links[0]: linkstring='[DL](' + ')  [DL]('.join(links) + ')'
-            else: linkstring=''
-            msg=msg + '`' + str(i) + '.` ' + str(df.loc[i,'Title']) + ' '
-            msg=msg + '`(by ' + str(df.loc[i,'AddedBy']) + ')` '
-            msg=msg + linkstring + '\n'
+            if links[0]: link_string='[DL](' + ')  [DL]('.join(links) + ')'
+            else: link_string=''
+            title_string=str(df.loc[i,'Title'])
+            addedby_string=str(df.loc[i,'AddedBy'])
+            msg=msg + '`' + str(i) + '.` ' + title_string + ' '
+            msg=msg + '`(by ' + addedby_string[:addedby_string.find('#')] + ')` '
+            msg=msg + link_string + '\n'
         msg=msg+''
         embed = discord.Embed(title="Watchlist", colour=discord.Colour(0xCD01BD), description=msg,)
         print(msg)
