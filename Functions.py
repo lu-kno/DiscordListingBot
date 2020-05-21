@@ -66,7 +66,7 @@ async def add2list_unlinked(message, input):
                     ignored.append(i)
         print('added')
         save_df(df, message)
-        await edit_msg(df2msg(df), message)
+        await edit_msg(df, message)
         response=''
         if added: response=response+'I added the following entries: %s\n' % added
         if ignored: response=response+'I ignored the double entries: %s\n' % ignored
@@ -94,7 +94,7 @@ async def add2list(message, input):
                     ignored.append(i)
         print('added')
         save_df(df, message)
-        await edit_msg(df2msg(df), message)
+        await edit_msg(df, message)
         response=''
         if added: response=response+'I added the following entries: %s\n' % added
         if ignored: response=response+'I ignored the double entries: %s\n' % ignored
@@ -145,7 +145,7 @@ async def addlink(message, input):
 
         print('links added')
         save_df(df, message)
-        await edit_msg(df2msg(df), message)
+        await edit_msg(df, message)
         print('edited')
         response=''
         if added_link: response=response+'I added the link(s) for the following entries: %s\n' % added_link
@@ -165,7 +165,7 @@ async def sort(message):
         df=load_df(message)
         df=df.sort_values('Title').reset_index(drop=True)
         save_df(df, message)
-        edit_msg(df2msg(df),message)
+        await edit_msg(df,message)
         await show(message)
         return 'List has been sorted'
     except Exception as e:
@@ -197,7 +197,7 @@ async def remove(message, input):
 
         print('removed')
         save_df(df, message)
-        await edit_msg(df2msg(df), message)
+        await edit_msg(df, message)
         print('edited')
         response=''
         if removed: response=response+'I removed the following entries: %s\n' % removed
@@ -218,14 +218,19 @@ async def pin_list(message):
     df=load_df(message)
 
     try:
-        msg = df2msg(df)
+        embed_list = df2embed(df)
+        print('embed list length %s' % len(embed_list))
         if bot: 
             print('Message will be pinned')
-            the_msg = await message.channel.send(embed=msg)   #
-            await the_msg.pin()                         #
-            pin_info={'Message_Id': the_msg.id,         #
-                      'Channel_Id': str(the_msg.channel),    #
-                      'Server_Id': str(the_msg.guild)}       #
+            msg_list=[]
+            for embed in embed_list:                                                        #loop added to separante embeds that are too long. embed_list is made for this
+                the_msg = await message.channel.send(embed=embed)   #
+                msg_list.append(the_msg)
+                await the_msg.pin()                         #
+                print('embed sent and pinned')
+            pin_info={'Message_Id': [msg.id for msg in msg_list],                           #the dict now contains a list of all related pinned messages
+                      'Channel_Id': str(message.channel),    #
+                      'Server_Id': str(message.guild)}       #
         else: 
             pin_info={'Message_Id': 'the_msg.id',
                         'Channel_Id': 'the_msg.channel',
@@ -241,20 +246,31 @@ async def pin_list(message):
         print('Something went wrong. Message could not be Pinned')
         return 'Message could not be pinned'
 
-async def edit_msg(new_content, message):
+async def edit_msg(df, message):
     # Maybe convert it to an 'update_pin(message)' function, opening the csv file again?
     '''replace the content of the pinned message of a server with the updated information'''
     try:
+        embed_list=df2embed(df)
         with open('./data//'+str(message.guild)+'_pin.json', 'r') as j: ref=json.load(j)
         print('ref')
         print(ref)
+        ref_list=ref['Message_Id']
         client=discord.Client()
-        msg = await message.channel.fetch_message(ref['Message_Id'])
-        
-        await msg.edit(embed=new_content)
+        if len(embed_list)!=len(ref_list):                                           # If the new content wont fit in all the old messages, a new pin will be created, removing old pinned messages
+            for ref_number in ref_list:
+                msg = await message.channel.fetch_message(ref_number)
+                await msg.unpin()
+            await pin_list(message)
+        else:
+            for i in range(len(ref_list)):
+                ref_number=ref_list[i]
+                embed=embed_list[i]
+                msg = await message.channel.fetch_message(ref_number)
+                await msg.edit(embed=embed)
+
         #await msg.edit(content=new_content)
         #await msg
-        print('New content: \n%s' % new_content)
+        #print('New content: \n%s' % new_content)
         
         print('Message edited')
         return 0
@@ -264,7 +280,7 @@ async def edit_msg(new_content, message):
         return 'Message could not be edited'
 
 
-def df2msg_string(df):
+def df2embed_string(df):
     '''This function creates a string using the data from a dataframe formatted for a message'''
     try:
         msg='```\n'
@@ -281,24 +297,32 @@ def df2msg_string(df):
         print('The Dataframe could not be converted into a message string. Make sure the Dataframe is formatted correctly')
         return '```Error creating message```'
 
-def df2msg(df):
-    '''This function creates a string using the data from a dataframe and returns an embed object to send'''
+def df2embed(df):
+    '''This function returns a list of discord embeds containing the data from a dataframe separated every 10 elements'''
     try:
-        msg=''
+        description=''
+        description_list=[]
+
         for i in range(df.index.size): 
+            if i!=1 and (i-1)%10==0:
+                description_list.append(description)
+                description=''
             links=str(df.loc[i,'Link']).strip().split(' ')
             if links[0]: link_string='[DL](' + ')  [DL]('.join(links) + ')'
             else: link_string=''
             title_string=str(df.loc[i,'Title'])
             addedby_string=str(df.loc[i,'AddedBy'])
-            msg=msg + '`' + str(i) + '.` ' + title_string + ' '
-            msg=msg + '`(by ' + addedby_string[:addedby_string.find('#')] + ')` '
-            msg=msg + link_string + '\n'
-        msg=msg+''
-        embed = discord.Embed(title="Watchlist", colour=discord.Colour(0xCD01BD), description=msg,)
-        print(msg)
+            description=description + '`' + str(i) + '.` ' + title_string + ' '
+            description=description + '`(by ' + addedby_string[:addedby_string.find('#')] + ')` '
+            description=description + link_string + '\n'
+        description_list.append(description)
+        embed_list=[]
+        for description in description_list:
+            embed = discord.Embed(title="Watchlist", colour=discord.Colour(0xCD01BD), description=description,)
+            embed_list.append(embed)
+        print(description_list)
 
-        return embed
+        return embed_list
     except Exception as e:
         print(e)
         print('The Dataframe could not be converted into a message string. Make sure the Dataframe is formatted correctly')
@@ -306,8 +330,9 @@ def df2msg(df):
 
 async def show(message):
     try:
-        embed=df2msg(load_df(message))
-        await message.channel.send(embed=embed)
+        embed_list=df2embed(load_df(message))
+        for embed in embed_list:
+            await message.channel.send(embed=embed)
         return '** **'
     except Exception as e:
         print(e)
@@ -332,8 +357,8 @@ def add_space(s):
 #add2list(test, ['a', 'b'])
 
 async def test_embed(message):
-    embed=df2msg(load_df(test))
-    await message.channel.send(embed=embed)
+    embed_list=df2embed(load_df(test))
+    for embed in embed_list: await message.channel.send(embed=embed)
 
 async def capitalize(message):
     df=load_df(message)
