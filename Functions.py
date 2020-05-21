@@ -239,7 +239,7 @@ async def pin_list(message):
     except Exception as e:
         print(e)
         print('Something went wrong. Message could not be Pinned')
-        return 'Error 1'
+        return 'Message could not be pinned'
 
 async def edit_msg(new_content, message):
     # Maybe convert it to an 'update_pin(message)' function, opening the csv file again?
@@ -257,11 +257,11 @@ async def edit_msg(new_content, message):
         print('New content: \n%s' % new_content)
         
         print('Message edited')
-        return 
+        return 0
     except Exception as e:
         print(e)
         print('The Pinned Message could not be edited. Maybe the message hasn\'t been pinned or the pin info file is corrupt/missing.')
-        return 'Error 2'
+        return 'Message could not be edited'
 
 
 def df2msg_string(df):
@@ -305,9 +305,14 @@ def df2msg(df):
         return '```Error creating message```'
 
 async def show(message):
-    embed=df2msg(load_df(message))
-    await message.channel.send(embed=embed)
-    return '** **'
+    try:
+        embed=df2msg(load_df(message))
+        await message.channel.send(embed=embed)
+        return '** **'
+    except Exception as e:
+        print(e)
+        print('The message could not be send')
+        return '```The message could not be sent. List can not be shown```'
 
 def is_number(s):
     try:
@@ -329,3 +334,6 @@ def add_space(s):
 async def test_embed(message):
     embed=df2msg(load_df(test))
     await message.channel.send(embed=embed)
+
+async def capitalize(message):
+    df=load_df(message)
