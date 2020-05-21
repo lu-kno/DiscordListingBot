@@ -42,7 +42,7 @@ async def on_message(message):
 
         if command==('add'): response = await add2list(message, input)
 
-        if command==('addlink'): response = await addlink(message, input)
+        elif command==('addlink'): response = await addlink(message, input)
 
         elif command==('remove'): response = await remove(message,input)
 
