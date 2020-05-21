@@ -221,14 +221,22 @@ async def pin_list(message):
     try:
         embed_list = df2embed(df)
         print('embed list length %s' % len(embed_list))
+        
+        # Unpin old messages before pinning the new ones
+        with open('./data//'+str(message.guild)+'_pin.json', 'r') as j: pin_info=json.load(j)
+        for ref_number in pin_info['Message_Id']:
+                msg = await message.channel.fetch_message(ref_number)
+                await msg.unpin()
+
         if bot: 
             print('Message will be pinned')
             msg_list=[]
             for embed in embed_list:                                                        #loop added to separante embeds that are too long. embed_list is made for this
                 the_msg = await message.channel.send(embed=embed)   #
                 msg_list.append(the_msg)
-                await the_msg.pin()                         #
                 print('embed sent and pinned')
+            for msg in reversed(msg_list):
+                await msg.pin()                         #
             pin_info={'Message_Id': [msg.id for msg in msg_list],                           #the dict now contains a list of all related pinned messages
                       'Channel_Id': str(message.channel),    #
                       'Server_Id': str(message.guild)}       #
