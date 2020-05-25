@@ -266,9 +266,9 @@ async def edit_msg(df, message):
         ref_list=ref['Message_Id']
         client=discord.Client()
         if len(embed_list)!=len(ref_list):                                           # If the new content wont fit in all the old messages, a new pin will be created, removing old pinned messages
-            for ref_number in ref_list:
-                msg = await message.channel.fetch_message(ref_number)
-                await msg.unpin()
+            #for ref_number in ref_list:
+            #    msg = await message.channel.fetch_message(ref_number)
+            #    await msg.unpin()
             await pin_list(message)
         else:
             for i in range(len(ref_list)):
