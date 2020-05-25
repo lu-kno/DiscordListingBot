@@ -67,6 +67,7 @@ async def add2list(message, input):
                 for m in re.finditer('https?://[^\s\n]*', i): links.append(i[m.start():m.end()])
                 if links: i=i[:i.find('http')-1].strip()
                 if i.upper() not in [n.upper() for n in df['Title'].to_list()]: 
+                    print('about to start searching')
                     netflix_path=bot.search(i)
                     df.loc[df.index.size]= [i.capitalize()] + [message.author] + [' '.join(links)] + [netflix_path]
                     added.append(i)

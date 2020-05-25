@@ -26,7 +26,8 @@ class UNOGSBot():
         #go_btn= self.driver.find_element_by_xpath('//*[@id="navbar"]/form/div/span[2]/input')
         #go_btn.click()
         #sleep(1)
-
+        
+        print('Webdriver: %s' % s)
         self.driver.get('https://unogs.com/search/'+s)
         sleep(1)
         print('Webdriver: searching %s' % s)
