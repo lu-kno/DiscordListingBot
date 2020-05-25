@@ -5,7 +5,8 @@ import json
 import os
 import re
 from random import randrange
-bot=1
+from UNOGS_bot import *
+#from Bot import bot
 
 class Message:
     def __init__(self, content):
@@ -43,40 +44,17 @@ def load_df(message):
         print('df loaded')
     except Exception as e: 
         print(e)
-        df=pd.DataFrame(data={'Title':[],'AddedBy':[],'Link':[]})
+        df=pd.DataFrame(data={'Title':[],'AddedBy':[],'Link':[],'Netflix':[]})
         print('new df created')
     if 'Link' not in df.columns:
         l=['' for i in range(df.index.size)]
         df['Link']=l
+    if 'Netflix' not in df.columns:
+        l=['' for i in range(df.index.size)]
+        df['Netflix']=l
     df = df.replace(np.nan, '', regex=True)
     df = capitalize(df)
     return df
-
-
-async def add2list_unlinked(message, input):
-    try:
-        global df
-        df=load_df(message)
-        added=[]
-        ignored=[]
-        for i in input:
-                if i.upper() not in [n.upper() for n in df['Title'].to_list()]: 
-                    df.loc[df.index.size]= [i] + [message.author]
-                    added.append(i)
-                else:
-                    ignored.append(i)
-        print('added')
-        save_df(df, message)
-        await edit_msg(df, message)
-        response=''
-        if added: response=response+'I added the following entries: %s\n' % added
-        if ignored: response=response+'I ignored the double entries: %s\n' % ignored
-        if not response:  'Sorry, I cant come up with a response to that'
-        print(response)
-        return response
-    except:
-        print('An error ocurred adding entries to the list')
-        return 'Error Adding to entry to the list'
 
 async def add2list(message, input):
     try:
@@ -89,7 +67,8 @@ async def add2list(message, input):
                 for m in re.finditer('https?://[^\s\n]*', i): links.append(i[m.start():m.end()])
                 if links: i=i[:i.find('http')-1].strip()
                 if i.upper() not in [n.upper() for n in df['Title'].to_list()]: 
-                    df.loc[df.index.size]= [i.capitalize()] + [message.author] + [' '.join(links)]
+                    netflix_path=bot.search(i)
+                    df.loc[df.index.size]= [i.capitalize()] + [message.author] + [' '.join(links)] + [netflix_path]
                     added.append(i)
                 else:
                     ignored.append(i)
@@ -102,7 +81,8 @@ async def add2list(message, input):
         if not response:  'Sorry, I cant come up with a response to that'
         print(response)
         return response
-    except:
+    except Exception as e:
+        print(e)
         print('An error ocurred adding entries to the list')
         return 'Error Adding to entry to the list'
 
@@ -174,6 +154,19 @@ async def sort(message):
         print('An error ocurred sorting the entries on the list')
         return 'Error sorting list'
 
+async def searchNFLX(message):
+    try:
+        global df
+        df=load_df(message)
+        for i in df.index:
+            df.loc[i,'Netflix']=bot.search(df.loc[i,'Title'])
+        save_df(df, message)
+        await edit_msg(df,message)
+        return 'Netflix links have been added'
+    except Exception as e:
+        print(e)
+        print('An error ocurred adding netflix links')
+        return 'Error adding Netflix links'
 
 async def remove(message, input):
     try: 
@@ -228,22 +221,17 @@ async def pin_list(message):
                 msg = await message.channel.fetch_message(ref_number)
                 await msg.unpin()
 
-        if bot: 
-            print('Message will be pinned')
-            msg_list=[]
-            for embed in embed_list:                                                        #loop added to separante embeds that are too long. embed_list is made for this
-                the_msg = await message.channel.send(embed=embed)   #
-                msg_list.append(the_msg)
-                print('embed sent and pinned')
-            for msg in reversed(msg_list):
-                await msg.pin()                         #
-            pin_info={'Message_Id': [msg.id for msg in msg_list],                           #the dict now contains a list of all related pinned messages
-                      'Channel_Id': str(message.channel),    #
-                      'Server_Id': str(message.guild)}       #
-        else: 
-            pin_info={'Message_Id': 'the_msg.id',
-                        'Channel_Id': 'the_msg.channel',
-                        'Server_Id': 'the_msg.guild'}
+        print('Message will be pinned')
+        msg_list=[]
+        for embed in embed_list:                                                        #loop added to separante embeds that are too long. embed_list is made for this
+            the_msg = await message.channel.send(embed=embed)   #
+            msg_list.append(the_msg)
+            print('embed sent and pinned')
+        for msg in reversed(msg_list):
+            await msg.pin()                         #
+        pin_info={'Message_Id': [msg.id for msg in msg_list],                           #the dict now contains a list of all related pinned messages
+                    'Channel_Id': str(message.channel),    #
+                    'Server_Id': str(message.guild)}       #
 
         with open('./data//'+str(message.guild)+'_pin.json', 'w+') as j: json.dump(pin_info,j)
         print('pin_info')
@@ -288,24 +276,6 @@ async def edit_msg(df, message):
         print('The Pinned Message could not be edited. Maybe the message hasn\'t been pinned or the pin info file is corrupt/missing.')
         return 'Message could not be edited'
 
-
-def df2embed_string(df):
-    '''This function creates a string using the data from a dataframe formatted for a message'''
-    try:
-        msg='```\n'
-        for i in range(df.index.size): 
-            #linkstring=''
-            #for link in df.loc[i,'Link']: linkstring=linkstring+str(link)+' '
-            msg=msg + str(i) + '. ' + str(df.loc[i,'Title']) 
-            msg=msg + '  (by ' + str(df.loc[i,'AddedBy']) + ')  ' 
-            msg=msg + str(df.loc[i,'Link']) + '\n'
-        msg=msg+'```'
-        return msg
-    except Exception as e:
-        print(e)
-        print('The Dataframe could not be converted into a message string. Make sure the Dataframe is formatted correctly')
-        return '```Error creating message```'
-
 def df2embed(df):
     '''This function returns a list of discord embeds containing the data from a dataframe separated every 10 elements'''
     try:
@@ -316,14 +286,18 @@ def df2embed(df):
             if i!=1 and (i-1)%10==0:
                 description_list.append(description)
                 description=''
-            links=str(df.loc[i,'Link']).strip().split(' ')
-            if links[0]: link_string='[DL](' + ')  [DL]('.join(links) + ')'
-            else: link_string=''
             title_string=str(df.loc[i,'Title'])
             addedby_string=str(df.loc[i,'AddedBy'])
+            netflix_path=df.loc[i,'Netflix']
+            links=str(df.loc[i,'Link']).strip().split(' ')
+            link_string=''
+
+            if links[0]: link_string='[DL](' + ')  [DL]('.join(links) + ')'
+            if netflix_path.startswith('/title/'):netflix_path='[NFLX](https://www.netflix.com'+netflix_path+')'
+
             description=description + '`' + str(i) + '.` ' + title_string + ' '
             description=description + '`(by ' + addedby_string[:addedby_string.find('#')] + ')` '
-            description=description + link_string + '\n'
+            description=description + netflix_path + link_string + '\n'
         description_list.append(description)
         embed_list=[]
         for description in description_list:

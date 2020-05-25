@@ -3,6 +3,7 @@ import json
 import os
 from Functions import *
 
+
 with open('./botpriv.key','r') as k: key=k.readlines()[0]
 
 #if not os.path.isfile('movie_list.json'):
@@ -16,6 +17,7 @@ client = discord.Client()
 @client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
+
 
 @client.event
 async def on_message(message):
@@ -47,6 +49,8 @@ async def on_message(message):
         elif command==('remove'): response = await remove(message,input)
 
         elif command==('sort'): response = await sort(message)
+
+        elif command==('searchNFLX'): response = await searchNFLX(message)
 
         elif command==('embed'): response = await test_embed(message)
 
