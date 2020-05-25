@@ -15,6 +15,7 @@ class UNOGSBot():
             options.add_argument('--disable-dev-shm-usage')
         self.driver=webdriver.Chrome(options=options)
         self.driver.get('https://unogs.com')
+        print('Webdriver initiated')
         sleep(1)
     def search(self, s):
         ##search movie and go
@@ -28,7 +29,7 @@ class UNOGSBot():
 
         self.driver.get('https://unogs.com/search/'+s)
         sleep(1)
-
+        print('Webdriver: searching %s' % s)
         #find first result and click to expand
         first_result=self.driver.find_elements_by_xpath('/html/body/div[9]/div[1]/div[2]/div')
         if first_result:
