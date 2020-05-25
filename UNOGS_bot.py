@@ -1,6 +1,8 @@
 from selenium import webdriver
 from time import sleep
 
+nflx_scraper=0
+
 class UNOGSBot():
     def __init__(self,headless=0):
         options=webdriver.ChromeOptions()
@@ -28,7 +30,7 @@ class UNOGSBot():
         #sleep(1)
         
         print('Webdriver: %s' % s)
-        self.driver.get('https://unogs.com/search/'+s)
+        self.driver.get('https://unogs.com/search/'+s.replace(' ', '%20'))
         sleep(1)
         print('Webdriver: searching %s' % s)
         #find first result and click to expand
@@ -59,4 +61,4 @@ class UNOGSBot():
         print('Title could not be found: %s' % s)
         return ''
 
-bot=UNOGSBot(headless=1)
+if nflx_scraper: bot=UNOGSBot(headless=1)
