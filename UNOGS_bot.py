@@ -7,6 +7,11 @@ class UNOGSBot():
         if headless: 
             options.add_argument('--ignore-certificate-errors')
             options.add_argument('--headless')
+            options.add_argument('start-maximized')
+            options.add_argument('disable-infobars')
+            options.add_argument('--disable-extensions')
+            options.add_argument('--disable-gpu')
+            options.add_argument('--disable-dev-shm-usage')
         self.driver=webdriver.Chrome(options=options)
         self.driver.get('https://unogs.com')
         sleep(1)
