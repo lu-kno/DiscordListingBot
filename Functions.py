@@ -6,7 +6,6 @@ import os
 import re
 from random import randrange
 from UNOGS_bot import *
-#from Bot import bot
 
 class Message:
     def __init__(self, content):
@@ -92,8 +91,11 @@ async def get_random(message):
         global df
         df=load_df(message)
         r=randrange(len(df))
-        output=str(df.loc[r,'Title']) + '  (by ' + str(df.loc[r,'AddedBy']) + ')'
-        response='Random result:\n```%s```' % output
+        embed= line2embed(df,r)
+        await message.channel.send(embed=embed)
+        #output=str(df.loc[r,'Title']) + '  (by ' + str(df.loc[r,'AddedBy']) + ')'
+        #response='Random result:\n```%s```' % output
+        response='** **'
         print(response)
         return response
     except:
@@ -276,6 +278,32 @@ async def edit_msg(df, message):
         print(e)
         print('The Pinned Message could not be edited. Maybe the message hasn\'t been pinned or the pin info file is corrupt/missing.')
         return 'Message could not be edited'
+
+def line2embed(df,i):
+    '''This function returns a list of discord embeds containing the data from a dataframe separated every 10 elements'''
+    try:
+        description=''
+
+        title_string=str(df.loc[i,'Title'])
+        addedby_string=str(df.loc[i,'AddedBy'])
+        netflix_path=df.loc[i,'Netflix']
+        links=str(df.loc[i,'Link']).strip().split(' ')
+        link_string=''
+
+        if links[0]: link_string='[DL](' + ')  [DL]('.join(links) + ')'
+        if netflix_path.startswith('/title/'):netflix_path='[NFLX](https://www.netflix.com'+netflix_path+')'
+
+        description=description + '`' + str(i) + '.` ' + title_string + ' '
+        description=description + '`(by ' + addedby_string[:addedby_string.find('#')] + ')` '
+        description=description + netflix_path + ' ' + link_string + '\n'
+
+        embed = discord.Embed(title="Random Element", colour=discord.Colour(0xCD01BD), description=description,)
+
+        return embed
+    except Exception as e:
+        print(e)
+        print('The element from Dataframe could not be converted into a message string. Make sure the Dataframe is formatted correctly')
+        return '```Error creating message```'
 
 def df2embed(df):
     '''This function returns a list of discord embeds containing the data from a dataframe separated every 10 elements'''
