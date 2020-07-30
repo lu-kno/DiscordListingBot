@@ -5,7 +5,8 @@ import json
 import os
 import re
 from random import randrange
-from UNOGS_bot import *
+nflx_scraper=0
+if nflx_scraper: from UNOGS_bot import *
 
 class Message:
     def __init__(self, content):
@@ -159,13 +160,16 @@ async def sort(message):
 
 async def searchNFLX(message):
     try:
-        global df
-        df=load_df(message)
-        for i in df.index:
-            df.loc[i,'Netflix']=bot.search(df.loc[i,'Title'])
-        save_df(df, message)
-        await edit_msg(df,message)
-        return 'Netflix links have been added'
+        if nflx_scraper:
+            global df
+            df=load_df(message)
+            for i in df.index:
+                df.loc[i,'Netflix']=bot.search(df.loc[i,'Title'])
+            save_df(df, message)
+            await edit_msg(df,message)
+            return 'Netflix links have been added'
+        else:
+            return 'Netflix search is deactivated in the code'
     except Exception as e:
         print(e)
         print('An error ocurred adding netflix links')
