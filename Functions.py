@@ -336,7 +336,7 @@ def df2embed(df):
         for description in description_list:
             embed = discord.Embed(title="Watchlist", colour=discord.Colour(0xCD01BD), description=description,)
             embed_list.append(embed)
-        print(description_list)
+        #print(description_list)
 
         return embed_list
     except Exception as e:
