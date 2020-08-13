@@ -2,7 +2,10 @@ import discord
 import json
 import os
 from Functions import *
-WIP=0
+import sys
+if re.search('WIP',str(sys.agrv), re.IGNORECASE):WIP=1
+else: WIP=0
+
 script_path=os.path.dirname(os.path.abspath(__file__))
 
 if WIP:
