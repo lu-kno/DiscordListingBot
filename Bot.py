@@ -3,7 +3,7 @@ import json
 import os
 from Functions import *
 import sys
-if re.search('WIP',str(sys.agrv), re.IGNORECASE):WIP=1
+if re.search('WIP',str(sys.argv), re.IGNORECASE):WIP=1
 else: WIP=0
 
 script_path=os.path.dirname(os.path.abspath(__file__))
