@@ -2,9 +2,14 @@ import discord
 import json
 import os
 from Functions import *
+WIP=1
+script_path=os.path.dirname(os.path.abspath(__file__))
 
+if WIP:
+    with open(os.path.join(script_path,'botprivWIP.key'),'r') as k: key=k.readlines()[0]
+else:
+    with open(os.path.join(script_path,'botpriv.key'),'r') as k: key=k.readlines()[0]
 
-with open('./botpriv.key','r') as k: key=k.readlines()[0]
 
 #if not os.path.isfile('movie_list.json'):
 #        with open('movie_list.json','w+') as j: json.dump([],j)

@@ -8,6 +8,8 @@ from random import randrange
 nflx_scraper=0
 if nflx_scraper: from UNOGS_bot import *
 
+script_path=os.path.dirname(os.path.abspath(__file__))
+
 class Message:
     def __init__(self, content):
         self.guild = 'CoronaCheck'
@@ -20,11 +22,11 @@ test=Message('acontent')
 
 def save_df(df, message, csv=1):
     try:
-        #df.to_pickle('./data//'+str(message.guild)+'.pck',compression=None)
+        #df.to_pickle(os.path.join(script_path,'data',str(message.guild)+'.pck'),compression=None)
         if csv: 
-            with open('./data//'+str(message.guild)+'.csv', 'w+') as csv: df.to_csv(csv, index=0)
+            with open(os.path.join(script_path,'data',str(message.guild)+'.csv'), 'w+') as csv: df.to_csv(csv, index=0)
         else:
-            df.to_json('./data//'+str(message.guild)+'.json', orient='index')
+            df.to_json(os.path.join(script_path,'data',str(message.guild)+'.json'), orient='index')
         print('df saved')
         return
     except Exception as e:
@@ -34,12 +36,12 @@ def save_df(df, message, csv=1):
 
 def load_df(message):
     try: 
-        if os.path.isfile('./data//'+str(message.guild)+'.json'):
-            df=pd.read_pickle('./data//'+str(message.guild)+'.json', orient='index')
-        elif os.path.isfile('./data//'+str(message.guild)+'.pck'):
-            df=pd.read_pickle('./data//'+str(message.guild)+'.pck',compression=None)
+        if os.path.isfile(os.path.join(script_path,'data',str(message.guild)+'.json')):
+            df=pd.read_pickle(os.path.join(script_path,'data',str(message.guild)+'.json'), orient='index')
+        elif os.path.isfile(os.path.join(script_path,'data',str(message.guild)+'.pck')):
+            df=pd.read_pickle(os.path.join(script_path,'data',str(message.guild)+'.pck'),compression=None)
         else:
-            with open('./data//'+str(message.guild)+'.csv') as csv: df=pd.read_csv(csv)
+            with open(os.path.join(script_path,'data',str(message.guild)+'.csv')) as csv: df=pd.read_csv(csv)
 
         print('df loaded')
     except Exception as e: 
@@ -223,7 +225,7 @@ async def pin_list(message):
         print('embed list length %s' % len(embed_list))
         
         # Unpin old messages before pinning the new ones
-        with open('./data//'+str(message.guild)+'_pin.json', 'r') as j: pin_info=json.load(j)
+        with open(os.path.join(script_path,'data',str(message.guild)+'_pin.json'), 'r') as j: pin_info=json.load(j)
         for ref_number in pin_info['Message_Id']:
                 msg = await message.channel.fetch_message(ref_number)
                 await msg.unpin()
@@ -240,7 +242,7 @@ async def pin_list(message):
                     'Channel_Id': str(message.channel),    #
                     'Server_Id': str(message.guild)}       #
 
-        with open('./data//'+str(message.guild)+'_pin.json', 'w+') as j: json.dump(pin_info,j)
+        with open(os.path.join(script_path,'data',str(message.guild)+'_pin.json'), 'w+') as j: json.dump(pin_info,j)
         print('pin_info')
         print(pin_info)
         return 'The message has been Pinned'
@@ -255,7 +257,7 @@ async def edit_msg(df, message):
     '''replace the content of the pinned message of a server with the updated information'''
     try:
         embed_list=df2embed(df)
-        with open('./data//'+str(message.guild)+'_pin.json', 'r') as j: ref=json.load(j)
+        with open(os.path.join(script_path,'data',str(message.guild)+'_pin.json'), 'r') as j: ref=json.load(j)
         print('ref')
         print(ref)
         ref_list=ref['Message_Id']
