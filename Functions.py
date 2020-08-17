@@ -58,7 +58,7 @@ def load_df(message):
     df = capitalize(df)
     return df
 
-async def add2list(message, input):
+async def add(message, input):
     try:
         global df
         df=load_df(message)
@@ -104,6 +104,43 @@ async def get_random(message):
     except:
         print('An error ocurred getting a random entry from the list')
         return 'Error  getting a random entry from the list'
+
+async def get(message, input):
+    try:
+        global df
+        df=load_df(message)
+
+        tmp_df=pd.DataFrame(data={'Title':[],'AddedBy':[],'Link':[],'Netflix':[]})
+
+        for i in input:
+            line=[]
+            if is_number(i):
+                if int(i) in df.index: 
+                    line=df.loc[int(i)]
+                    #added_link.append(str(df.loc[int(i),'Title']))
+                    #df.loc[int(i),'Link']=str(df.loc[int(i),'Link']) + ' ' + ' '.join(links)
+                else:
+                    not_found.append(i)
+            elif i.upper() in [n.upper() for n in df['Title'].to_list()]: 
+                bool_arr=df.loc[:,'Title'].str.match(i, case=False)
+                index=bool_arr[bool_arr==True].index
+                line=df.loc[int(index[0])]
+                #added_link.append(i)
+            else: not_found.append(i)
+
+            if line: tmp_df.loc[tmp_df.index.size]=line
+
+        embed_list=df2embed(tmp_df)
+        for embed in embed_list:
+            await message.channel.send(embed=embed)
+        
+        response='** **'
+        print(response)
+        return response
+        
+    except:
+        print('An error ocurred getting the entry from the list')
+        return 'Error  getting the entry from the list'
 
 async def addlink(message, input):
     try: 
@@ -286,7 +323,7 @@ async def edit_msg(df, message):
         return 'Message could not be edited'
 
 def line2embed(df,i):
-    '''This function returns a list of discord embeds containing the data from a dataframe separated every 10 elements'''
+    '''This function returns a discord embed containing the data from a dataframe in one single embed.'''
     try:
         description=''
 
@@ -364,15 +401,10 @@ def is_number(s):
     except ValueError:
         return False
 
-def add_space(s):
-    s=s+' '
-    while len(s[s.rfind('\n')+1:])%4: s=s+' '
-    return s
-
-#df=pd.DataFrame(data={'Title':['sun','moon'],'AddedBy':['Chris','Christi']})
-#save_df(df,test)
-#pin_list(test)
-#add2list(test, ['a', 'b'])
+#def add_space(s):
+#    s=s+' '
+#    while len(s[s.rfind('\n')+1:])%4: s=s+' '
+#    return s
 
 async def test_embed(message):
     embed_list=df2embed(load_df(test))

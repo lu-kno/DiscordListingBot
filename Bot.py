@@ -3,10 +3,14 @@ import json
 import os
 from Functions import *
 import sys
-if re.search('WIP',str(sys.argv), re.IGNORECASE):WIP=1
+script_path=os.path.dirname(os.path.abspath(__file__))
+
+
+if re.search('WIP',str(sys.argv), re.IGNORECASE) or os.path.isfile(os.path.join(script_path,'WIP.txt')):
+    WIP=1
+    print('Using WIP Version!')
 else: WIP=0
 
-script_path=os.path.dirname(os.path.abspath(__file__))
 
 if WIP:
     with open(os.path.join(script_path,'botprivWIP.key'),'r') as k: key=k.readlines()[0]
@@ -33,13 +37,13 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if message.content.lower().startswith('b!'):
+    if message.content.lower().startswith('b!') or (WIP and message.content.lower().startswith('!')):
         print(message.guild)
         print(message.channel)
         print(message.author)
         print(message.id)
         if ' ' in message.content:
-            command = message.content[2:message.content.find(' ')].lower()
+            command = message.content[message.content.find('!')+1:message.content.find(' ')].lower()
             input = message.content[message.content.find(' ')+1:].split(',')
         else: 
             command = message.content[2:]   
@@ -50,7 +54,7 @@ async def on_message(message):
 
         #with open('movie_list.json','r') as j: movie_list=json.load(j)
 
-        if command==('add'): response = await add2list(message, input)
+        if command==('add'): response = await add(message, input)
 
         elif command==('addlink'): response = await addlink(message, input)
 
@@ -65,6 +69,8 @@ async def on_message(message):
         elif command==('show'): response = await show(message)
 
         elif command==('pin'): response = await pin_list(message)
+
+        elif command==('get'): response = await get(message, input)
 
         elif command==('random'): response = await get_random(message)
 
