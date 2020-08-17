@@ -1,7 +1,7 @@
 import discord
 import json
 import os
-from Functions import *
+from BotFunctions import *
 import sys
 script_path=os.path.dirname(os.path.abspath(__file__))
 
