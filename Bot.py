@@ -46,7 +46,7 @@ async def on_message(message):
             command = message.content[message.content.find('!')+1:message.content.find(' ')].lower()
             input = message.content[message.content.find(' ')+1:].split(',')
         else: 
-            command = message.content[2:]   
+            command = message.content[message.content.find('!')+1:]   
             input=[]
         for i in range(len(input)):input[i]=input[i].strip()
 

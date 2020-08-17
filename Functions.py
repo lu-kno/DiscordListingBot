@@ -101,7 +101,8 @@ async def get_random(message):
         response='** **'
         print(response)
         return response
-    except:
+    except Exception as e:
+        print(e)
         print('An error ocurred getting a random entry from the list')
         return 'Error  getting a random entry from the list'
 
@@ -111,36 +112,39 @@ async def get(message, input):
         df=load_df(message)
 
         tmp_df=pd.DataFrame(data={'Title':[],'AddedBy':[],'Link':[],'Netflix':[]})
-
+        not_found=[]
         for i in input:
             line=[]
+            n=None
             if is_number(i):
                 if int(i) in df.index: 
-                    line=df.loc[int(i)]
+                    n=int(i)
+                    line=df.loc[n]
                     #added_link.append(str(df.loc[int(i),'Title']))
                     #df.loc[int(i),'Link']=str(df.loc[int(i),'Link']) + ' ' + ' '.join(links)
                 else:
                     not_found.append(i)
             elif i.upper() in [n.upper() for n in df['Title'].to_list()]: 
                 bool_arr=df.loc[:,'Title'].str.match(i, case=False)
-                index=bool_arr[bool_arr==True].index
-                line=df.loc[int(index[0])]
+                n=bool_arr[bool_arr==True].index[0]
+                line=df.loc[n]
                 #added_link.append(i)
-            else: not_found.append(i)
-
-            if line: tmp_df.loc[tmp_df.index.size]=line
+            if n==None: not_found.append(i)
+            else: tmp_df.loc[n]=df.loc[n]
 
         embed_list=df2embed(tmp_df)
         for embed in embed_list:
             await message.channel.send(embed=embed)
-        
-        response='** **'
+        if not_found: response='I could not find the following entries: %s\n' % not_found
+        else: response='** **'
+
         print(response)
         return response
         
-    except:
+    except Exception as e:
+        print(e)
         print('An error ocurred getting the entry from the list')
-        return 'Error  getting the entry from the list'
+        return 'An error ocurred getting the entry from the list'
 
 async def addlink(message, input):
     try: 
@@ -354,7 +358,7 @@ def df2embed(df):
         description=''
         description_list=[]
 
-        for i in range(df.index.size): 
+        for i in df.index: 
             if i!=1 and (i-1)%10==0:
                 description_list.append(description)
                 description=''
