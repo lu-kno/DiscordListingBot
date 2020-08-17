@@ -7,9 +7,12 @@ import re
 from SideFunctions import *
 from random import randrange
 
+function_list=dict()
+
 class BotFunction():
     """description of class"""
-    def __init__(self):
+    def __init__(self, name):
+            
         return
 
     def save_df(self, df, message, csv=1):
