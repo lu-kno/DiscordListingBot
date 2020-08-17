@@ -4,10 +4,9 @@ import numpy as np
 import json
 import os
 import re
-from SideFunctions import *
+from  BotFunctions import *
 from random import randrange
-
-function_list=dict()
+from config import *
 
 class BotFunction():
     """description of class"""

@@ -2,8 +2,9 @@ import discord
 import json
 import os
 from BotFunctions import *
+#import FunctionList
 import sys
-script_path=os.path.dirname(os.path.abspath(__file__))
+from config import *
 
 
 if re.search('WIP',str(sys.argv), re.IGNORECASE) or os.path.isfile(os.path.join(script_path,'WIP.txt')):
@@ -52,30 +53,7 @@ async def on_message(message):
 
         response= 'blank'
 
-        #with open('movie_list.json','r') as j: movie_list=json.load(j)
-
-        if command==('add'): response = await add(message, input)
-
-        elif command==('addlink'): response = await addlink(message, input)
-
-        elif command==('remove'): response = await remove(message,input)
-
-        elif command==('sort'): response = await sort(message)
-
-        elif command==('searchNFLX'): response = await searchNFLX(message)
-
-        elif command==('embed'): response = await test_embed(message)
-
-        elif command==('show'): response = await show(message)
-
-        elif command==('pin'): response = await pin_list(message)
-
-        elif command==('get'): response = await get(message, input)
-
-        elif command==('random'): response = await get_random(message)
-
-        elif command==('help'): response = 'the available commands are "b!add", "b!remove" and "b!show". \nWhen adding or removing entries, include the names after the command. \nTo enter multiple names, separate them with a comma (,) .\n Print this message again with the use of "b!help".'
-
+        if command in function_list.keys(): response = await function_list[command](message,input)
         else: response='I didnt understand "%s"' % command
 
 

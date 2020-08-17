@@ -5,6 +5,7 @@ import json
 import os
 import re
 from random import randrange
+from config import *
 
 def save_df(df, message, csv=1):
     try:
@@ -112,11 +113,15 @@ def df2embed(df):
     try:
         description=''
         description_list=[]
+        counter=-1
+        max=10
 
         for i in df.index: 
-            if i!=1 and (i-1)%10==0:
+            #if i!=1 and (i-1)%10==0:
+            if counter==10:
                 description_list.append(description)
                 description=''
+                counter=0
             title_string=str(df.loc[i,'Title'])
             addedby_string=str(df.loc[i,'AddedBy'])
             netflix_path=df.loc[i,'Netflix']
@@ -129,6 +134,7 @@ def df2embed(df):
             description=description + '`' + str(i) + '.` ' + title_string + ' '
             description=description + '`(by ' + addedby_string[:addedby_string.find('#')] + ')` '
             description=description + netflix_path + ' ' + link_string + '\n'
+            counter=counter+1
         description_list.append(description)
         embed_list=[]
         for description in description_list:
