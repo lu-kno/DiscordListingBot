@@ -73,7 +73,11 @@ async def get_random(message, input):
         print('An error ocurred getting a random entry from the list')
         return 'Error  getting a random entry from the list'
 
-async def get(message, input):
+async def getv(message,input):
+    response = await get(message,input,vote=1)
+    return response
+
+async def get(message, input, vote=0):
     try:
         global df
         df=load_df(message)
@@ -96,9 +100,13 @@ async def get(message, input):
             else: not_found.append(i)
             if n is not None: tmp_df.loc[n]=df.loc[n]
 
-        embed_list=df2embed(tmp_df)
-        for embed in embed_list:
-            await message.channel.send(embed=embed)
+        if vote: embed_list,emoji_list=df2embed(tmp_df,vote=vote)
+        else: embed_list=df2embed(tmp_df,vote=vote)
+        for i in range(len(embed_list)):
+            msg= await message.channel.send(embed=embed_list[i])
+            if vote:
+                for emoji in emoji_list[i]:
+                    await msg.add_reaction(emoji)
         if not_found: response='I could not find the following entries: %s\n' % not_found
         else: response='** **'
 
@@ -279,6 +287,7 @@ async def show(message, input):
 function_list={'add':add,
                'addlink':addlink,
                'get':get,
+               'getv':getv,
                'random':get_random,
                'sort':sort,
                'searchNFLX':searchNFLX,
