@@ -56,13 +56,17 @@ async def add(message, input):
         print('An error ocurred adding entries to the list')
         return 'Error Adding to entry to the list'
 
-async def get_random(message, input):
+async def get_random(message, input, reroll=0):
     try:
         global df
         df=load_df(message)
         r=randrange(len(df))
-        embed= line2embed(df,r)
-        await message.channel.send(embed=embed)
+        embed = line2embed(df,r)
+        if not reroll:
+            msg = await message.channel.send(embed=embed,nonce=11)
+            await msg.add_reaction(chr(128257))
+        else:
+            await message.edit(embed=embed,nonce=11)
         #output=str(df.loc[r,'Title']) + '  (by ' + str(df.loc[r,'AddedBy']) + ')'
         #response='Random result:\n```%s```' % output
         response='** **'

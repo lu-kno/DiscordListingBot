@@ -33,8 +33,26 @@ async def on_ready():
 
 
 @client.event
+async def on_reaction_add(reaction,user):
+    #global movie_list
+    if user == client.user:
+        return
+    if reaction.message.nonce==11:
+        await get_random(reaction.message,[],reroll=1)
+    return
+
+@client.event
+async def on_reaction_remove(reaction,user):
+    #global movie_list
+    if user == client.user:
+        return
+    if reaction.message.nonce==11:
+        await get_random(reaction.message,[],reroll=1)
+    return
+
+@client.event
 async def on_message(message):
-    global movie_list
+    #global movie_list
     if message.author == client.user:
         return
 
@@ -72,5 +90,5 @@ async def on_message(message):
         #    for i in sorted(movie_list): new_edit=new_edit+'\n'+i
         #    new_edit=new_edit+'```' 
         #    pinned_msg.edit(new_edit)
-
+    return
 client.run(key)
