@@ -8,8 +8,9 @@ from SideFunctions import *
 from random import randrange
 nflx_scraper=0
 if nflx_scraper: from UNOGS_bot import *
+from config import *
 
-script_path=os.path.dirname(os.path.abspath(__file__))
+
 
 class Message:
     def __init__(self, content):
@@ -19,6 +20,9 @@ class Message:
         self.content = content
 
 test=Message('acontent')
+
+async def help(message,input):
+    return 'the available commands are "b!add", "b!remove" and "b!show". \nWhen adding or removing entries, include the names after the command. \nTo enter multiple names, separate them with a comma (,) .\n Print this message again with the use of "b!help".'
 
 
 async def add(message, input):
@@ -52,13 +56,17 @@ async def add(message, input):
         print('An error ocurred adding entries to the list')
         return 'Error Adding to entry to the list'
 
-async def get_random(message):
+async def get_random(message, input, reroll=0):
     try:
         global df
         df=load_df(message)
         r=randrange(len(df))
-        embed= line2embed(df,r)
-        await message.channel.send(embed=embed)
+        embed = line2embed(df,r)
+        if not reroll:
+            msg = await message.channel.send(embed=embed,nonce=11)
+            await msg.add_reaction(chr(128257))
+        else:
+            await message.edit(embed=embed,nonce=11)
         #output=str(df.loc[r,'Title']) + '  (by ' + str(df.loc[r,'AddedBy']) + ')'
         #response='Random result:\n```%s```' % output
         response='** **'
@@ -69,7 +77,11 @@ async def get_random(message):
         print('An error ocurred getting a random entry from the list')
         return 'Error  getting a random entry from the list'
 
-async def get(message, input):
+async def getv(message,input):
+    response = await get(message,input,vote=1)
+    return response
+
+async def get(message, input, vote=0):
     try:
         global df
         df=load_df(message)
@@ -92,9 +104,13 @@ async def get(message, input):
             else: not_found.append(i)
             if n is not None: tmp_df.loc[n]=df.loc[n]
 
-        embed_list=df2embed(tmp_df)
-        for embed in embed_list:
-            await message.channel.send(embed=embed)
+        if vote: embed_list,emoji_list=df2embed(tmp_df,vote=vote)
+        else: embed_list=df2embed(tmp_df,vote=vote)
+        for i in range(len(embed_list)):
+            msg= await message.channel.send(embed=embed_list[i])
+            if vote:
+                for emoji in emoji_list[i]:
+                    await msg.add_reaction(emoji)
         if not_found: response='I could not find the following entries: %s\n' % not_found
         else: response='** **'
 
@@ -147,7 +163,7 @@ async def addlink(message, input):
         print('An error ocurred adding the link to the entry')
         return 'Error adding link to entry'
 
-async def sort(message):
+async def sort(message, input):
     try:
         global df
         df=load_df(message)
@@ -161,7 +177,7 @@ async def sort(message):
         print('An error ocurred sorting the entries on the list')
         return 'Error sorting list'
 
-async def searchNFLX(message):
+async def searchNFLX(message, input):
     try:
         if nflx_scraper:
             global df
@@ -215,7 +231,7 @@ async def remove(message, input):
         print('An error ocurred removing entries from the list')
         return 'Error removing entry from the list'
 
-async def pin_list(message):
+async def pin_list(message, input):
     '''This Function sends a message with the servers list and pins it. 
     Aditionally, the reference id for the message, channel and server (guild) are saved 
     to edit the message with every change made'''
@@ -255,7 +271,7 @@ async def pin_list(message):
 
 
 
-async def show(message):
+async def show(message, input):
     try:
         embed_list=df2embed(load_df(message))
         for embed in embed_list:
@@ -272,3 +288,16 @@ async def show(message):
 #    while len(s[s.rfind('\n')+1:])%4: s=s+' '
 #    return s
 
+function_list={'add':add,
+               'addlink':addlink,
+               'get':get,
+               'getv':getv,
+               'random':get_random,
+               'sort':sort,
+               'searchNFLX':searchNFLX,
+               'remove':remove,
+               'pin':pin_list,
+               'show':show,
+               'embed':test_embed,
+               'help': help
+               }

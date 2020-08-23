@@ -5,6 +5,7 @@ import json
 import os
 import re
 from random import randrange
+from config import *
 
 def save_df(df, message, csv=1):
     try:
@@ -107,35 +108,54 @@ def line2embed(df,i):
         print('The element from Dataframe could not be converted into a message string. Make sure the Dataframe is formatted correctly')
         return '```Error creating message```'
 
-def df2embed(df):
+def df2embed(df,vote=0):
     '''This function returns a list of discord embeds containing the data from a dataframe separated every 10 elements'''
     try:
         description=''
         description_list=[]
+        emoji_list=[]
+        emoji_stack=[]
+        counter=-1
+        c=0
+        max=10
 
         for i in df.index: 
-            if i!=1 and (i-1)%10==0:
+            #if i!=1 and (i-1)%10==0:
+            if counter==max:
                 description_list.append(description)
+                emoji_list.append(emoji_stack)
+                emoji_stack=[]
                 description=''
+                counter=0
+                c=0
             title_string=str(df.loc[i,'Title'])
             addedby_string=str(df.loc[i,'AddedBy'])
             netflix_path=df.loc[i,'Netflix']
             links=str(df.loc[i,'Link']).strip().split(' ')
             link_string=''
+            emoji=''
 
             if links[0]: link_string='[DL](' + ')  [DL]('.join(links) + ')'
             if netflix_path.startswith('/title/'):netflix_path='[NFLX](https://www.netflix.com'+netflix_path+')'
+            if vote: emoji=chr(127462+c)
 
-            description=description + '`' + str(i) + '.` ' + title_string + ' '
+            description=description + '`' + str(i) + '.` '+emoji + title_string + ' '
             description=description + '`(by ' + addedby_string[:addedby_string.find('#')] + ')` '
             description=description + netflix_path + ' ' + link_string + '\n'
+            counter=counter+1
+            c=c+1
+            emoji_stack.append(emoji)
+
+        emoji_list.append(emoji_stack)
         description_list.append(description)
         embed_list=[]
+
         for description in description_list:
             embed = discord.Embed(title="Watchlist", colour=discord.Colour(0xCD01BD), description=description,)
             embed_list.append(embed)
         #print(description_list)
 
+        if vote: return embed_list, emoji_list
         return embed_list
     except Exception as e:
         print(e)
