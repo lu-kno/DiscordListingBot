@@ -47,6 +47,48 @@ def load_df(message):
     df = capitalize(df)
     return df
 
+async def get_elements(ctx, input, vote=0):
+    try:
+        global df
+        df=load_df(ctx)
+
+        tmp_df=pd.DataFrame(data={'Title':[],'AddedBy':[],'Link':[],'Netflix':[]})
+        not_found=[]
+        for i in input:
+            line=[]
+            n=None
+            if is_number(i):
+                if int(i) in df.index: 
+                    n=int(i)
+                    line=df.loc[n]
+                else:
+                    not_found.append(i)
+            elif i.upper() in [n.upper() for n in df['Title'].to_list()]: 
+                bool_arr=df.loc[:,'Title'].str.match(i, case=False)
+                n=bool_arr[bool_arr==True].index[0]
+                line=df.loc[n]
+            else: not_found.append(i)
+            if n is not None: tmp_df.loc[n]=df.loc[n]
+
+        if vote: embed_list,emoji_list=df2embed(tmp_df,vote=vote)
+        else: embed_list=df2embed(tmp_df,vote=vote)
+        for i in range(len(embed_list)):
+            msg= await ctx.channel.send(embed=embed_list[i])
+            if vote:
+                for emoji in emoji_list[i]:
+                    await msg.add_reaction(emoji)
+        if not_found: response='I could not find the following entries: %s\n' % not_found
+        else: response=''
+        print(response)
+        if response: await ctx.send(response)
+        return
+        
+    except Exception as e:
+        print(e)
+        print('An error ocurred getting the entry from the list')
+        await ctx.send('An error ocurred getting the entry from the list')
+        return
+
 
 async def edit_msg(df, message):
     # Maybe convert it to an 'update_pin(message)' function, opening the csv file again?
@@ -175,9 +217,14 @@ def cap(s):
     return s.capitalize()
 
 
-def is_number(s):
+def is_number(*s):
     try:
-        int(s)
+        for i in s: int(i)
         return True
     except ValueError:
         return False
+
+def arg2input(arg):
+    if is_number(*arg.split(' ')): input=arg.split(' ')
+    else: input=[i.strip() for i in arg.split(',')]
+    return input

@@ -4,12 +4,20 @@ import numpy as np
 import json
 import os
 import re
+import sys
+import typing
+from discord.ext import commands
+
 from SideFunctions import *
 from random import randrange
 nflx_scraper=0
 if nflx_scraper: from UNOGS_bot import *
 from config import *
 
+if re.search('WIP',str(sys.argv), re.IGNORECASE) or os.path.isfile(os.path.join(script_path,'WIP.txt')):
+    bot = commands.Bot(command_prefix='!')
+else: 
+    bot = commands.Bot(command_prefix='b!')
 
 
 class Message:
@@ -21,14 +29,14 @@ class Message:
 
 test=Message('acontent')
 
-async def help(message,input):
-    return 'the available commands are "b!add", "b!remove" and "b!show". \nWhen adding or removing entries, include the names after the command. \nTo enter multiple names, separate them with a comma (,) .\n Print this message again with the use of "b!help".'
-
-
-async def add(message, input):
+@bot.command()
+async def add(ctx, *, arg):
+    '''Add elements separated by commas.
+    You can add a link after the name and before any separating comma to include it on the list'''
     try:
         global df
-        df=load_df(message)
+        df=load_df(ctx)
+        input=arg2input(arg)
         added=[]
         ignored=[]
         for i in input:
@@ -38,94 +46,74 @@ async def add(message, input):
                 if i.upper() not in [n.upper() for n in df['Title'].to_list()]: 
                     netflix_path=''
                     if nflx_scraper: netflix_path=bot.search(i)
-                    df.loc[df.index.size]= [i.capitalize()] + [message.author] + [' '.join(links)] + [netflix_path]
+                    df.loc[df.index.size]= [i.capitalize()] + [ctx.author] + [' '.join(links)] + [netflix_path]
                     added.append(i)
                 else:
                     ignored.append(i)
         print('added')
-        save_df(df, message)
-        await edit_msg(df, message)
+        save_df(df, ctx)
+        await edit_msg(df, ctx)
         response=''
         if added: response=response+'I added the following entries: %s\n' % added
         if ignored: response=response+'I ignored the double entries: %s\n' % ignored
         if not response:  'Sorry, I cant come up with a response to that'
         print(response)
-        return response
+        await ctx.send(response)
+        return
     except Exception as e:
         print(e)
         print('An error ocurred adding entries to the list')
-        return 'Error Adding to entry to the list'
+        await ctx.send('Error Adding to entry to the list')
+        return 
 
-async def get_random(message, input, reroll=0):
+@bot.command(name='random',aliases=['r', 'get_random','getr'])
+async def get_random(ctx, reroll: typing.Optional[int]=0):
+    '''Return a random element from the list.
+    By clicking on the reaction you can reroll the random result.'''
     try:
         global df
-        df=load_df(message)
+        df=load_df(ctx)
         r=randrange(len(df))
         embed = line2embed(df,r)
         if not reroll:
-            msg = await message.channel.send(embed=embed,nonce=11)
+            msg = await ctx.channel.send(embed=embed,nonce=11)
             await msg.add_reaction(chr(128257))
         else:
-            await message.edit(embed=embed,nonce=11)
+            await ctx.edit(embed=embed,nonce=11)
         #output=str(df.loc[r,'Title']) + '  (by ' + str(df.loc[r,'AddedBy']) + ')'
         #response='Random result:\n```%s```' % output
         response='** **'
         print(response)
-        return response
+        return
     except Exception as e:
         print(e)
         print('An error ocurred getting a random entry from the list')
         return 'Error  getting a random entry from the list'
 
-async def getv(message,input):
-    response = await get(message,input,vote=1)
-    return response
+@bot.command(aliases=['getvote','vote'])
+async def getv(ctx, *, arg):
+    '''Same as the 'get' command, but includes a reaction for each element to allow voting.'''
+    input=arg2input(arg)
+    await get_elements(ctx,input,vote=1)
+    return 
 
-async def get(message, input, vote=0):
-    try:
-        global df
-        df=load_df(message)
+@bot.command()
+async def get(ctx, *, arg):
+    '''This returns the elements specified and separated by a comma.
+    If only using the index of the elements, only a separating blankspace is needed'''
+    input=arg2input(arg)
+    await get_elements(ctx,input,vote=0)
+    return
 
-        tmp_df=pd.DataFrame(data={'Title':[],'AddedBy':[],'Link':[],'Netflix':[]})
-        not_found=[]
-        for i in input:
-            line=[]
-            n=None
-            if is_number(i):
-                if int(i) in df.index: 
-                    n=int(i)
-                    line=df.loc[n]
-                else:
-                    not_found.append(i)
-            elif i.upper() in [n.upper() for n in df['Title'].to_list()]: 
-                bool_arr=df.loc[:,'Title'].str.match(i, case=False)
-                n=bool_arr[bool_arr==True].index[0]
-                line=df.loc[n]
-            else: not_found.append(i)
-            if n is not None: tmp_df.loc[n]=df.loc[n]
-
-        if vote: embed_list,emoji_list=df2embed(tmp_df,vote=vote)
-        else: embed_list=df2embed(tmp_df,vote=vote)
-        for i in range(len(embed_list)):
-            msg= await message.channel.send(embed=embed_list[i])
-            if vote:
-                for emoji in emoji_list[i]:
-                    await msg.add_reaction(emoji)
-        if not_found: response='I could not find the following entries: %s\n' % not_found
-        else: response='** **'
-
-        print(response)
-        return response
-        
-    except Exception as e:
-        print(e)
-        print('An error ocurred getting the entry from the list')
-        return 'An error ocurred getting the entry from the list'
-
-async def addlink(message, input):
+@bot.command(aliases=['addlinks'])
+async def addlink(ctx, *, arg):
+    '''Adds a link to an existing element from the list.
+    Usage: addlink <index|name> <links>'''
     try: 
         global df
-        df=load_df(message)
+        input=arg2input(arg)
+
+        df=load_df(ctx)
         added_link=[]
         not_found=[]
         for i in input:
@@ -148,44 +136,53 @@ async def addlink(message, input):
         
 
         print('links added')
-        save_df(df, message)
-        await edit_msg(df, message)
+        save_df(df, ctx)
+        await edit_msg(df, ctx)
         print('edited')
         response=''
         if added_link: response=response+'I added the link(s) for the following entries: %s\n' % added_link
         if not_found: response=response+'I could not find the following entries: %s\n' % not_found
         if not response: 'Sorry, I cant come up with a response to that'
         print(response)
-        return response
+        await ctx.send(response)
+        return
 
     except Exception as e:
         print(e)
         print('An error ocurred adding the link to the entry')
-        return 'Error adding link to entry'
+        await ctx.send('Error adding link to entry')
+        return
 
-async def sort(message, input):
+@bot.command()
+async def sort(ctx):
+    '''Sorts all elements alphabetically'''
     try:
         global df
-        df=load_df(message)
+        df=load_df(ctx)
         df=df.sort_values('Title').reset_index(drop=True)
-        save_df(df, message)
-        await edit_msg(df,message)
-        await show(message)
-        return 'List has been sorted'
+        save_df(df, ctx)
+        await edit_msg(df,ctx)
+        await show(ctx)
+        await ctx.send('List has been sorted')
+        return
+
     except Exception as e:
         print(e)
         print('An error ocurred sorting the entries on the list')
-        return 'Error sorting list'
+        await ctx.send('Error sorting list')
+        return
 
-async def searchNFLX(message, input):
+@bot.command()
+async def searchNFLX(ctx):
+    '''Not Working! Search the corresponding NETFLIX link for the movie|serie titles'''
     try:
         if nflx_scraper:
             global df
-            df=load_df(message)
+            df=load_df(ctx)
             for i in df.index:
                 df.loc[i,'Netflix']=bot.search(df.loc[i,'Title'])
-            save_df(df, message)
-            await edit_msg(df,message)
+            save_df(df, ctx)
+            await edit_msg(df,ctx)
             return 'Netflix links have been added'
         else:
             return 'Netflix search is deactivated in the code'
@@ -194,10 +191,14 @@ async def searchNFLX(message, input):
         print('An error ocurred adding netflix links')
         return 'Error adding Netflix links'
 
-async def remove(message, input):
+@bot.command(aliases=['rm'])
+async def remove(ctx, *, arg):
+    '''Removes one or more elements from the list. Titles separated by commas.
+    When only using the index of the elements, only a blankspace is needed to separate elements.'''
     try: 
         global df
-        df=load_df(message)
+        input=arg2input(arg)
+        df=load_df(ctx)
         removed=[]
         not_found=[]
         for i in input:
@@ -216,71 +217,77 @@ async def remove(message, input):
         df=df.reset_index(drop=1)
 
         print('removed')
-        save_df(df, message)
-        await edit_msg(df, message)
+        save_df(df, ctx)
+        await edit_msg(df, ctx)
         print('edited')
         response=''
         if removed: response=response+'I removed the following entries: %s\n' % removed
         if not_found: response=response+'I could not find the following entries: %s\n' % not_found
         if not response: 'Sorry, I cant come up with a response to that'
         print(response)
-        return response
+        await ctx.send(response)
+        return
 
     except Exception as e:
         print(e)
         print('An error ocurred removing entries from the list')
-        return 'Error removing entry from the list'
+        await ctx.send('Error removing entry from the list')
+        return 
 
-async def pin_list(message, input):
-    '''This Function sends a message with the servers list and pins it. 
-    Aditionally, the reference id for the message, channel and server (guild) are saved 
-    to edit the message with every change made'''
-    df=load_df(message)
+@bot.command(name='pin', aliases=['pin_list'])
+async def pin_list(ctx):
+    '''Sends list as embeds and pins them. This messages are kept up-to-date''' 
+
+    df=load_df(ctx)
 
     try:
         embed_list = df2embed(df)
         print('embed list length %s' % len(embed_list))
         
         # Unpin old messages before pinning the new ones
-        with open(os.path.join(script_path,'data',str(message.guild)+'_pin.json'), 'r') as j: pin_info=json.load(j)
+        with open(os.path.join(script_path,'data',str(ctx.guild)+'_pin.json'), 'r') as j: pin_info=json.load(j)
         for ref_number in pin_info['Message_Id']:
-                msg = await message.channel.fetch_message(ref_number)
+                msg = await ctx.channel.fetch_message(ref_number)
                 await msg.unpin()
 
         print('Message will be pinned')
         msg_list=[]
         for embed in embed_list:                                                        #loop added to separante embeds that are too long. embed_list is made for this
-            the_msg = await message.channel.send(embed=embed)   #
+            the_msg = await ctx.channel.send(embed=embed)   #
             msg_list.append(the_msg)
             print('embed sent and pinned')
         for msg in reversed(msg_list):
             await msg.pin()                         #
         pin_info={'Message_Id': [msg.id for msg in msg_list],                           #the dict now contains a list of all related pinned messages
-                    'Channel_Id': str(message.channel),    #
-                    'Server_Id': str(message.guild)}       #
+                    'Channel_Id': str(ctx.channel),    #
+                    'Server_Id': str(ctx.guild)}       #
 
-        with open(os.path.join(script_path,'data',str(message.guild)+'_pin.json'), 'w+') as j: json.dump(pin_info,j)
+        with open(os.path.join(script_path,'data',str(ctx.guild)+'_pin.json'), 'w+') as j: json.dump(pin_info,j)
         print('pin_info')
         print(pin_info)
-        return 'The message has been Pinned'
+        await ctx.send('The message has been Pinned')
+        return
         
     except Exception as e:
         print(e)
         print('Something went wrong. Message could not be Pinned')
-        return 'Message could not be pinned'
+        await ctx.send('Message could not be pinned')
+        return
 
 
-
-async def show(message, input):
+@bot.command()
+async def show(ctx):
+    '''Sends the lsit as embeds to the channel'''
     try:
-        embed_list=df2embed(load_df(message))
+        embed_list=df2embed(load_df(ctx))
         for embed in embed_list:
-            await message.channel.send(embed=embed)
-        return '** **'
+            await ctx.channel.send(embed=embed)
+        return
     except Exception as e:
         print(e)
         print('The message could not be send')
-        return '```The message could not be sent. List can not be shown```'
+        await ctx.send('The message could not be sent. List can not be shown')
+        return
 
 
 #def add_space(s):
@@ -288,16 +295,16 @@ async def show(message, input):
 #    while len(s[s.rfind('\n')+1:])%4: s=s+' '
 #    return s
 
-function_list={'add':add,
-               'addlink':addlink,
-               'get':get,
-               'getv':getv,
-               'random':get_random,
-               'sort':sort,
-               'searchNFLX':searchNFLX,
-               'remove':remove,
-               'pin':pin_list,
-               'show':show,
-               'embed':test_embed,
-               'help': help
-               }
+#function_list={'add':add,
+#               'addlink':addlink,
+#               'get':get,
+#               'getv':getv,
+#               'random':get_random,
+#               'sort':sort,
+#               'searchNFLX':searchNFLX,
+#               'remove':remove,
+#               'pin':pin_list,
+#               'show':show,
+#               'embed':test_embed,
+#               'help': help
+#               }
