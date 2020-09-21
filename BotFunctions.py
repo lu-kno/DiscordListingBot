@@ -6,13 +6,15 @@ import os
 import re
 import sys
 import typing
+
+from random import randrange
 from discord.ext import commands
 
+from config import *
 from SideFunctions import *
-from random import randrange
+
 nflx_scraper=0
 if nflx_scraper: from UNOGS_bot import *
-from config import *
 
 if re.search('WIP',str(sys.argv), re.IGNORECASE) or os.path.isfile(os.path.join(script_path,'WIP.txt')):
     bot = commands.Bot(command_prefix='!')
@@ -235,42 +237,14 @@ async def remove(ctx, *, arg):
         return 
 
 @bot.command(name='pin', aliases=['pin_list'])
-async def pin_list(ctx):
+async def _pin_list(ctx):
     '''Sends list as embeds and pins them. This messages are kept up-to-date''' 
-
-    df=load_df(ctx)
-
     try:
-        embed_list = df2embed(df)
-        print('embed list length %s' % len(embed_list))
-        
-        # Unpin old messages before pinning the new ones
-        with open(os.path.join(script_path,'data',str(ctx.guild)+'_pin.json'), 'r') as j: pin_info=json.load(j)
-        for ref_number in pin_info['Message_Id']:
-                msg = await ctx.channel.fetch_message(ref_number)
-                await msg.unpin()
-
-        print('Message will be pinned')
-        msg_list=[]
-        for embed in embed_list:                                                        #loop added to separante embeds that are too long. embed_list is made for this
-            the_msg = await ctx.channel.send(embed=embed)   #
-            msg_list.append(the_msg)
-            print('embed sent and pinned')
-        for msg in reversed(msg_list):
-            await msg.pin()                         #
-        pin_info={'Message_Id': [msg.id for msg in msg_list],                           #the dict now contains a list of all related pinned messages
-                    'Channel_Id': str(ctx.channel),    #
-                    'Server_Id': str(ctx.guild)}       #
-
-        with open(os.path.join(script_path,'data',str(ctx.guild)+'_pin.json'), 'w+') as j: json.dump(pin_info,j)
-        print('pin_info')
-        print(pin_info)
-        await ctx.send('The message has been Pinned')
-        return
+        await pin_list(ctx)
         
     except Exception as e:
         print(e)
-        print('Something went wrong. Message could not be Pinned')
+        print('side Funciton error. pin failed')
         await ctx.send('Message could not be pinned')
         return
 
@@ -289,22 +263,3 @@ async def show(ctx):
         await ctx.send('The message could not be sent. List can not be shown')
         return
 
-
-#def add_space(s):
-#    s=s+' '
-#    while len(s[s.rfind('\n')+1:])%4: s=s+' '
-#    return s
-
-#function_list={'add':add,
-#               'addlink':addlink,
-#               'get':get,
-#               'getv':getv,
-#               'random':get_random,
-#               'sort':sort,
-#               'searchNFLX':searchNFLX,
-#               'remove':remove,
-#               'pin':pin_list,
-#               'show':show,
-#               'embed':test_embed,
-#               'help': help
-#               }

@@ -32,7 +32,7 @@ def load_df(message):
         else:
             with open(os.path.join(script_path,'data',str(message.guild)+'.csv')) as csv: df=pd.read_csv(csv)
 
-        print('df loaded')
+        #print('df loaded')
     except Exception as e: 
         print(e)
         df=pd.DataFrame(data={'Title':[],'AddedBy':[],'Link':[],'Netflix':[]})
@@ -90,28 +90,51 @@ async def get_elements(ctx, input, vote=0):
         return
 
 
-async def edit_msg(df, message):
-    # Maybe convert it to an 'update_pin(message)' function, opening the csv file again?
+async def edit_msg(df, ctx):
+    # Maybe convert it to an 'update_pin(ctx)' function, opening the csv file again?
     '''replace the content of the pinned message of a server with the updated information'''
     try:
         embed_list=df2embed(df)
-        with open(os.path.join(script_path,'data',str(message.guild)+'_pin.json'), 'r') as j: ref=json.load(j)
-        print('ref')
-        print(ref)
-        ref_list=ref['Message_Id']
+        with open(os.path.join(script_path,'data',str(ctx.guild)+'_pin.json'), 'r') as j: pin_info=json.load(j)
+        print('pin_info')
+        print(pin_info)
+        ref_list=pin_info['Message_Id']
         client=discord.Client()
-        if len(embed_list)!=len(ref_list):                                           # If the new content wont fit in all the old messages, a new pin will be created, removing old pinned messages
-            #for ref_number in ref_list:
-            #    msg = await message.channel.fetch_message(ref_number)
-            #    await msg.unpin()
-            await pin_list(message)
-        else:
-            for i in range(len(ref_list)):
-                ref_number=ref_list[i]
-                embed=embed_list[i]
-                msg = await message.channel.fetch_message(ref_number)
-                await msg.edit(embed=embed)
+        #if len(embed_list)!=len(ref_list):                                           # If the new content wont fit in all the old messages, a new pin will be created, removing old pinned messages
+        #    #for ref_number in ref_list:
+        #    #    msg = await ctx.channel.fetch_message(ref_number)
+        #    #    await msg.unpin()
+        #    #await pin_list(ctx)
 
+        if len(embed_list)>=len(ref_list):
+            for i in range(len(ref_list)):
+                msg = await ctx.channel.fetch_message(ref_list[i])
+                await msg.edit(embed=embed_list[i])
+
+            for i in range(len(ref_list),len(embed_list)):
+                msg = await ctx.channel.send(embed=embed_list[i])
+                await msg.pin()
+                pin_info['Message_Id'].append(msg.id)
+
+        elif len(embed_list)<len(ref_list):
+            for i in range(len(embed_list)):
+                msg = await ctx.channel.fetch_message(ref_list[i])
+                await msg.edit(embed=embed_list[i])
+
+            for i in reversed(range(len(embed_list),len(ref_list))):
+                msg = await ctx.channel.fetch_message(ref_list[i])
+                await msg.edit(embed=empty_embed())
+                await msg.unpin()
+                pin_info['Message_Id'].pop(i)
+
+        #else:
+        #    for i in range(len(ref_list)):
+        #        ref_number=ref_list[i]
+        #        embed=embed_list[i]
+        #        msg = await ctx.channel.fetch_message(ref_number)
+        #        await msg.edit(embed=embed)
+
+        with open(os.path.join(script_path,'data',str(ctx.guild)+'_pin.json'), 'w+') as j: json.dump(pin_info,j)
         #await msg.edit(content=new_content)
         #await msg
         #print('New content: \n%s' % new_content)
@@ -123,6 +146,44 @@ async def edit_msg(df, message):
         print('The Pinned Message could not be edited. Maybe the message hasn\'t been pinned or the pin info file is corrupt/missing.')
         return 'Message could not be edited'
 
+async def pin_list(ctx):
+    '''Sends list as embeds and pins them. This messages are kept up-to-date''' 
+
+    df=load_df(ctx)
+
+    try:
+        embed_list = df2embed(df)
+        print('embed list length %s' % len(embed_list))
+        
+        # Unpin old messages before pinning the new ones
+        with open(os.path.join(script_path,'data',str(ctx.guild)+'_pin.json'), 'r') as j: pin_info=json.load(j)
+        for ref_number in pin_info['Message_Id']:
+                msg = await ctx.channel.fetch_message(ref_number)
+                await msg.unpin()
+
+        print('Message will be pinned')
+        msg_list=[]
+        for embed in embed_list:                                                        #loop added to separante embeds that are too long. embed_list is made for this
+            the_msg = await ctx.channel.send(embed=embed)   #
+            msg_list.append(the_msg)
+            print('embed sent and pinned')
+        for msg in reversed(msg_list):
+            await msg.pin()                         #
+        pin_info={'Message_Id': [msg.id for msg in msg_list],                           #the dict now contains a list of all related pinned messages
+                    'Channel_Id': str(ctx.channel),    #
+                    'Server_Id': str(ctx.guild)}       #
+
+        with open(os.path.join(script_path,'data',str(ctx.guild)+'_pin.json'), 'w+') as j: json.dump(pin_info,j)
+        print('pin_info')
+        print(pin_info)
+        await ctx.send('The message has been Pinned')
+        return
+        
+    except Exception as e:
+        print(e)
+        print('Something went wrong. Message could not be Pinned')
+        await ctx.send('Message could not be pinned')
+        return
     
 def line2embed(df,i):
     '''This function returns a discord embed containing the data from a dataframe in one single embed.'''
@@ -228,3 +289,6 @@ def arg2input(arg):
     if is_number(*arg.split(' ')): input=arg.split(' ')
     else: input=[i.strip() for i in arg.split(',')]
     return input
+
+def empty_embed():
+    return discord.Embed(title=" ", colour=discord.Colour(0xCD01BD), description='',)

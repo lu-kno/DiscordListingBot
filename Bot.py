@@ -25,6 +25,7 @@ else:
 
 @bot.event
 async def on_ready():
+    await bot.change_presence(activity=discord.Game('Python!'))
     print('We have logged in as {0.user}'.format(bot))
 
 @bot.event
