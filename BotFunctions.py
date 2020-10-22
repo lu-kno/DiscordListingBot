@@ -6,6 +6,9 @@ import os
 import re
 import sys
 import typing
+import datetime
+from dateutil.parser import parse
+import asyncio
 
 from random import randrange
 from discord.ext import commands
@@ -28,6 +31,57 @@ class Message:
         self.channel = 'general'
         self.author = 'anauthor'
         self.content = content
+
+class Reminders:
+    def __init__(self):
+        try: 
+            with open(os.path.join(script_path,'data','reminders.csv')) as csv: self.df=pd.read_csv(csv)
+            print('Reminders loaded')
+        except Exception as e: 
+            print(e)
+            self.df=pd.DataFrame(data={'Guild':[],'Channel':[],'Author':[],'Members':[],'Content':[],'Set_date':[]})
+            print('New reminders created')
+        
+        self.df=self.df.sort_values('Set_date').reset_index(drop=1)
+        self.df = self.df.replace(np.nan, '', regex=True)
+        return
+
+    def add_msg(self, ctx, members,content, set_date):
+        new=pd.DataFrame(data={\
+            'Guild':[ctx.guild.id],\
+            'Channel':[ctx.channel.mention],\
+            'Author':[ctx.author.mention],\
+            'Members':[' '.join([m.mention for m in members])],\
+            'Content':[content],\
+            'Set_date':[str(set_date)]})
+
+        self.df=self.df.append(new)
+        self.df=self.df.sort_values('Set_date').reset_index(drop=1)
+        self.save()
+        return
+
+    async def check(self):
+        set_date=parse(self.df.loc[0,'Set_date'])
+        curr_date=datetime.datetime.now()
+        if curr_date>set_date:
+            await self.remind(0)
+            self.save()
+        return
+
+        
+    def save(self):
+        with open(os.path.join(script_path,'data','reminders.csv'), 'w+') as csv: self.df.to_csv(csv, index=0)
+
+    async def remind(self,index):
+        d1=self.df.loc[index]
+        response=' '.join(['Reminder from', d1['Author'], 'to', d1['Members'], ':', d1['Content']+'\n'+d1['Set_date']])
+        guild = await bot.fetch_guild(d1['Guild'])
+        channel =  await guild.fetch_channel(d1['Channel'])
+        await channel.send(response)
+        self.df=self.df.drop(index).reset_index()
+        return
+
+reminders=Reminders()
 
 test=Message('acontent')
 
@@ -248,10 +302,9 @@ async def _pin_list(ctx):
         await ctx.send('Message could not be pinned')
         return
 
-
 @bot.command()
 async def show(ctx):
-    '''Sends the lsit as embeds to the channel'''
+    '''Sends the list as embeds to the channel'''
     try:
         embed_list=df2embed(load_df(ctx))
         for embed in embed_list:
@@ -262,4 +315,58 @@ async def show(ctx):
         print('The message could not be send')
         await ctx.send('The message could not be sent. List can not be shown')
         return
+
+
+#@bot.command(name='reminder', aliases=['remindme','remind'])
+#async def set_reminder(ctx, members: commands.Greedy[discord.Member], *, text='I dont know what to remind you about'):
+    
+#    def check(m):
+#        return m.author == ctx.author
+
+#    response1='When should I remind you about this? (Respond with "!" to delete the reminder. Respond with "h" for help)'
+#    await ctx.send(response1)
+#    msg = await bot.wait_for('message', check=check)
+    
+#    if msg.content=='h':
+#        await ctx.send('tell me the date in "year-month-day" format or how long to wait for in "--w --d --h --m --s" format (weeks, days, hours, minutes, seconds)')
+#        msg = await bot.wait_for('message', check=check)
+
+#    if msg.content.startswith('!'):
+#        await ctx.send("I'll try to forget this ever happened")
+#        print('Reminder canceled')
+#        return
+
+#    curr_date=datetime.datetime.now()
+#    content=msg.content
+#    delta = parse_timedelta(content)
+#    if delta:
+#        print(curr_date)
+#        print(delta)
+#        set_date=curr_date+delta
+
+#    else:
+#        try: set_date=parse(content)
+#        except Exception as e:
+#            print('Date not parsed:\n'+e)
+#            await ctx.send('I could not understand that. I will ignore this reminder')
+#            return
+
+#    if set_date<curr_date:
+#        print('set_date is in the past')
+#        await ctx.send('This date is in the past. That is not how time works')
+#        return
+
+
+#    reminders.add_msg(ctx, members, text, set_date)
+
+
+#    await ctx.send(';'.join([str(set_date),str(ctx.guild.id), ctx.channel.mention, ctx.author.mention,','.join([m.mention for m in members]),text])+'\n')
+#    await ctx.send('I will remind you on {}'.format(str(set_date)))
+#    return
+
+    
+    #set reminder text
+    # reminder list should be a pending list and a done list (max 10 items)
+    # ask to remind tomorrow (add 1 day and move it back to the pending list) or delete it (keeps it in the done list)
+
 

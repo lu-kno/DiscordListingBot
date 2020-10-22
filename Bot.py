@@ -6,6 +6,7 @@ from discord.ext import commands
 
 from config import *
 from BotFunctions import *
+running=1
 
 # set prefix and key
 if re.search('WIP',str(sys.argv), re.IGNORECASE) or os.path.isfile(os.path.join(script_path,'WIP.txt')):
@@ -22,6 +23,10 @@ else:
 #bot = discord.Client()
 
 
+#@bot.event
+#async def on_message(message):
+#    await reminders.check()
+#    return
 
 @bot.event
 async def on_ready():
@@ -40,10 +45,14 @@ async def on_reaction_add(reaction,user):
 @bot.event
 async def on_reaction_remove(reaction,user):
     #global movie_list
-    if user == bot.user:
-        return
-    if reaction.message.nonce==11:
+    if reaction.message.nonce==11 and user != bot.user:
         await get_random(reaction.message,1)
     return
 
-bot.run(key)
+
+
+while running:
+    try:
+        bot.run(key)
+    except Exception as e:
+        print(e)

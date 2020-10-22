@@ -6,6 +6,9 @@ import os
 import re
 from random import randrange
 from config import *
+import datetime
+import asyncio
+
 
 def save_df(df, message, csv=1):
     try:
@@ -196,7 +199,16 @@ def line2embed(df,i):
         links=str(df.loc[i,'Link']).strip().split(' ')
         link_string=''
 
-        if links[0]: link_string='[DL](' + ')  [DL]('.join(links) + ')'
+        if links[0]: 
+            for link in links:
+                prefix='DL'
+                if 'mega.nz' in link.lower(): prefix='MEGA'
+                else:
+                    torrent=['pirate','bay','torrent']
+                    for t in torrent: 
+                        if t in link.lower():
+                            prefix='TORR'
+                link_string=link_string+'[{}]({})  '.format(prefix, link)
         if netflix_path.startswith('/title/'):netflix_path='[NFLX](https://www.netflix.com'+netflix_path+')'
 
         description=description + '`' + str(i) + '.` ' + title_string + ' '
@@ -238,7 +250,17 @@ def df2embed(df,vote=0):
             link_string=''
             emoji=''
 
-            if links[0]: link_string='[DL](' + ')  [DL]('.join(links) + ')'
+            if links[0]: 
+                for link in links:
+                    prefix='DL'
+                    if 'mega.nz' in link.lower(): prefix='MEGA'
+                    else:
+                       torrent=['pirate','bay','torrent']
+                       for t in torrent: 
+                           if t in link.lower():
+                               prefix='TORR'
+                    link_string=link_string+'[{}]({})  '.format(prefix, link)
+                    #link_string='[DL](' + ')  [DL]('.join(links) + ')'
             if netflix_path.startswith('/title/'):netflix_path='[NFLX](https://www.netflix.com'+netflix_path+')'
             if vote: emoji=chr(127462+c)
 
@@ -292,3 +314,25 @@ def arg2input(arg):
 
 def empty_embed():
     return discord.Embed(title=" ", colour=discord.Colour(0xCD01BD), description='',)
+
+def parse_timedelta(time_str):
+    try:    
+        regex = re.compile(r'((?P<weeks>\d+?)w)?\s?((?P<days>\d+?)d)?\s?((?P<hours>\d+?)hr?)?\s?((?P<minutes>\d+?)m)?\s?((?P<seconds>\d+?)s)?')
+        parts = regex.match(time_str)
+        if not parts:
+            return
+        parts = parts.groupdict()
+        for i in parts: 
+            if parts[i]==None: parts[i]=0
+            parts[i]=int(parts[i])
+        return datetime.timedelta(**parts)
+    except Exception as e:
+        print(e)
+        print('timedelta could not be parsed')
+        return None
+
+async def check_reminders():
+    running=1
+    while running:
+        print('checking reminders')
+        await asyncio.sleep(2)
