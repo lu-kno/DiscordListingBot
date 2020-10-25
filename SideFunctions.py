@@ -50,7 +50,7 @@ def load_df(message):
     df = capitalize(df)
     return df
 
-async def get_elements(ctx, input, vote=0):
+async def get_elements(ctx, input, vote=0, embed_title='Watchlist'):
     try:
         global df
         df=load_df(ctx)
@@ -74,7 +74,7 @@ async def get_elements(ctx, input, vote=0):
             if n is not None: tmp_df.loc[n]=df.loc[n]
 
         if vote: embed_list,emoji_list=df2embed(tmp_df,vote=vote)
-        else: embed_list=df2embed(tmp_df,vote=vote)
+        else: embed_list=df2embed(tmp_df,vote=vote, embed_title=embed_title)
         for i in range(len(embed_list)):
             msg= await ctx.channel.send(embed=embed_list[i])
             if vote:
@@ -223,7 +223,7 @@ def line2embed(df,i):
         print('The element from Dataframe could not be converted into a message string. Make sure the Dataframe is formatted correctly')
         return '```Error creating message```'
 
-def df2embed(df,vote=0):
+def df2embed(df,vote=0, embed_title="Watchlist"):
     '''This function returns a list of discord embeds containing the data from a dataframe separated every 10 elements'''
     try:
         description=''
@@ -276,7 +276,7 @@ def df2embed(df,vote=0):
         embed_list=[]
 
         for description in description_list:
-            embed = discord.Embed(title="Watchlist", colour=discord.Colour(0xCD01BD), description=description,)
+            embed = discord.Embed(title=embed_title, colour=discord.Colour(0xCD01BD), description=description,)
             embed_list.append(embed)
         #print(description_list)
 

@@ -98,11 +98,19 @@ async def add(ctx, *, arg):
         for i in input:
                 links=[]
                 for m in re.finditer('https?://[^\s\n]*', i): links.append(i[m.start():m.end()])
-                if links: i=i[:i.find('http')-1].strip()
+                if links: i=i[:i.find('http')-1].strip().capitalize()
+                
                 if i.upper() not in [n.upper() for n in df['Title'].to_list()]: 
                     netflix_path=''
                     if nflx_scraper: netflix_path=bot.search(i)
                     df.loc[df.index.size]= [i.capitalize()] + [ctx.author] + [' '.join(links)] + [netflix_path]
+                    added.append(i)
+                elif links:
+                    curr_links=[link for link in df.loc[df['Title']==i,'Link'].to_string(index=0).split(sep=' ') if link]
+                    
+                    [curr_links.append(link) for link in links if link not in curr_links]
+
+                    df.loc[df['Title']==i,'Link']=' '.join(curr_links)
                     added.append(i)
                 else:
                     ignored.append(i)
@@ -110,7 +118,9 @@ async def add(ctx, *, arg):
         save_df(df, ctx)
         await edit_msg(df, ctx)
         response=''
-        if added: response=response+'I added the following entries: %s\n' % added
+        if added: 
+            await get_elements(ctx, added, vote=0, embed_title='Added')
+            #response=response+'I added the following entries: %s\n' % added
         if ignored: response=response+'I ignored the double entries: %s\n' % ignored
         if not response:  'Sorry, I cant come up with a response to that'
         print(response)
