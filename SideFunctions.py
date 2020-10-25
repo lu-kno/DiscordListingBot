@@ -5,18 +5,20 @@ import json
 import os
 import re
 from random import randrange
-from config import *
+import config
 import datetime
 import asyncio
 
 
+testing_import='asdfasdfa'
+
 def save_df(df, message, csv=1):
     try:
-        #df.to_pickle(os.path.join(script_path,'data',str(message.guild)+'.pck'),compression=None)
+        #df.to_pickle(os.path.join(config.script_path,'data',str(message.guild)+'.pck'),compression=None)
         if csv: 
-            with open(os.path.join(script_path,'data',str(message.guild)+'.csv'), 'w+') as csv: df.to_csv(csv, index=0)
+            with open(os.path.join(config.script_path,'data',str(message.guild)+'.csv'), 'w+') as csv: df.to_csv(csv, index=0)
         else:
-            df.to_json(os.path.join(script_path,'data',str(message.guild)+'.json'), orient='index')
+            df.to_json(os.path.join(config.script_path,'data',str(message.guild)+'.json'), orient='index')
         print('df saved')
         return
     except Exception as e:
@@ -24,16 +26,14 @@ def save_df(df, message, csv=1):
         print('There was a problem saving the Data to the pickle file')
         return 'Error'
 
-    
-
 def load_df(message):
     try: 
-        if os.path.isfile(os.path.join(script_path,'data',str(message.guild)+'.json')):
-            df=pd.read_pickle(os.path.join(script_path,'data',str(message.guild)+'.json'), orient='index')
-        elif os.path.isfile(os.path.join(script_path,'data',str(message.guild)+'.pck')):
-            df=pd.read_pickle(os.path.join(script_path,'data',str(message.guild)+'.pck'),compression=None)
+        if os.path.isfile(os.path.join(config.script_path,'data',str(message.guild)+'.json')):
+            df=pd.read_pickle(os.path.join(config.script_path,'data',str(message.guild)+'.json'), orient='index')
+        elif os.path.isfile(os.path.join(config.script_path,'data',str(message.guild)+'.pck')):
+            df=pd.read_pickle(os.path.join(config.script_path,'data',str(message.guild)+'.pck'),compression=None)
         else:
-            with open(os.path.join(script_path,'data',str(message.guild)+'.csv')) as csv: df=pd.read_csv(csv)
+            with open(os.path.join(config.script_path,'data',str(message.guild)+'.csv')) as csv: df=pd.read_csv(csv)
 
         #print('df loaded')
     except Exception as e: 
@@ -92,13 +92,12 @@ async def get_elements(ctx, input, vote=0, embed_title='Watchlist'):
         await ctx.send('An error ocurred getting the entry from the list')
         return
 
-
 async def edit_msg(df, ctx):
     # Maybe convert it to an 'update_pin(ctx)' function, opening the csv file again?
     '''replace the content of the pinned message of a server with the updated information'''
     try:
         embed_list=df2embed(df)
-        with open(os.path.join(script_path,'data',str(ctx.guild)+'_pin.json'), 'r') as j: pin_info=json.load(j)
+        with open(os.path.join(config.script_path,'data',str(ctx.guild)+'_pin.json'), 'r') as j: pin_info=json.load(j)
         print('pin_info')
         print(pin_info)
         ref_list=pin_info['Message_Id']
@@ -137,7 +136,7 @@ async def edit_msg(df, ctx):
         #        msg = await ctx.channel.fetch_message(ref_number)
         #        await msg.edit(embed=embed)
 
-        with open(os.path.join(script_path,'data',str(ctx.guild)+'_pin.json'), 'w+') as j: json.dump(pin_info,j)
+        with open(os.path.join(config.script_path,'data',str(ctx.guild)+'_pin.json'), 'w+') as j: json.dump(pin_info,j)
         #await msg.edit(content=new_content)
         #await msg
         #print('New content: \n%s' % new_content)
@@ -159,7 +158,7 @@ async def pin_list(ctx):
         print('embed list length %s' % len(embed_list))
         
         # Unpin old messages before pinning the new ones
-        with open(os.path.join(script_path,'data',str(ctx.guild)+'_pin.json'), 'r') as j: pin_info=json.load(j)
+        with open(os.path.join(config.script_path,'data',str(ctx.guild)+'_pin.json'), 'r') as j: pin_info=json.load(j)
         for ref_number in pin_info['Message_Id']:
                 msg = await ctx.channel.fetch_message(ref_number)
                 await msg.unpin()
@@ -176,7 +175,7 @@ async def pin_list(ctx):
                     'Channel_Id': str(ctx.channel),    #
                     'Server_Id': str(ctx.guild)}       #
 
-        with open(os.path.join(script_path,'data',str(ctx.guild)+'_pin.json'), 'w+') as j: json.dump(pin_info,j)
+        with open(os.path.join(config.script_path,'data',str(ctx.guild)+'_pin.json'), 'w+') as j: json.dump(pin_info,j)
         print('pin_info')
         print(pin_info)
         await ctx.send('The message has been Pinned')
@@ -287,7 +286,6 @@ def df2embed(df,vote=0, embed_title="Watchlist"):
         print('The Dataframe could not be converted into a message string. Make sure the Dataframe is formatted correctly')
         return '```Error creating message```'
 
-
 async def test_embed(message):
     embed_list=df2embed(load_df(test))
     for embed in embed_list: await message.channel.send(embed=embed)
@@ -298,7 +296,6 @@ def capitalize(df):
 
 def cap(s):
     return s.capitalize()
-
 
 def is_number(*s):
     try:
@@ -336,3 +333,6 @@ async def check_reminders():
     while running:
         print('checking reminders')
         await asyncio.sleep(2)
+
+async def is_owner(ctx):
+    return ctx.author.id == config.author

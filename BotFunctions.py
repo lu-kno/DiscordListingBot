@@ -13,13 +13,14 @@ import asyncio
 from random import randrange
 from discord.ext import commands
 
-from config import *
-from SideFunctions import *
+import config
+#from SideFunctions import *
+import SideFunctions as sf
 
 nflx_scraper=0
 if nflx_scraper: from UNOGS_bot import *
 
-if re.search('WIP',str(sys.argv), re.IGNORECASE) or os.path.isfile(os.path.join(script_path,'WIP.txt')):
+if re.search('WIP',str(sys.argv), re.IGNORECASE) or os.path.isfile(os.path.join(config.script_path,'WIP.txt')):
     bot = commands.Bot(command_prefix='!')
 else: 
     bot = commands.Bot(command_prefix='b!')
@@ -35,7 +36,7 @@ class Message:
 class Reminders:
     def __init__(self):
         try: 
-            with open(os.path.join(script_path,'data','reminders.csv')) as csv: self.df=pd.read_csv(csv)
+            with open(os.path.join(config.script_path,'data','reminders.csv')) as csv: self.df=pd.read_csv(csv)
             print('Reminders loaded')
         except Exception as e: 
             print(e)
@@ -70,7 +71,7 @@ class Reminders:
 
         
     def save(self):
-        with open(os.path.join(script_path,'data','reminders.csv'), 'w+') as csv: self.df.to_csv(csv, index=0)
+        with open(os.path.join(config.script_path,'data','reminders.csv'), 'w+') as csv: self.df.to_csv(csv, index=0)
 
     async def remind(self,index):
         d1=self.df.loc[index]
@@ -81,7 +82,7 @@ class Reminders:
         self.df=self.df.drop(index).reset_index()
         return
 
-reminders=Reminders()
+#reminders=Reminders()
 
 test=Message('acontent')
 
@@ -91,8 +92,8 @@ async def add(ctx, *, arg):
     You can add a link after the name and before any separating comma to include it on the list'''
     try:
         global df
-        df=load_df(ctx)
-        input=arg2input(arg)
+        df=sf.load_df(ctx)
+        input=sf.arg2input(arg)
         added=[]
         ignored=[]
         for i in input:
@@ -115,16 +116,17 @@ async def add(ctx, *, arg):
                 else:
                     ignored.append(i)
         print('added')
-        save_df(df, ctx)
-        await edit_msg(df, ctx)
+        sf.save_df(df, ctx)
+        await sf.edit_msg(df, ctx)
         response=''
         if added: 
-            await get_elements(ctx, added, vote=0, embed_title='Added')
+            await sf.get_elements(ctx, added, vote=0, embed_title='Added')
+            response='added to list'
             #response=response+'I added the following entries: %s\n' % added
-        if ignored: response=response+'I ignored the double entries: %s\n' % ignored
-        if not response:  'Sorry, I cant come up with a response to that'
-        print(response)
-        await ctx.send(response)
+        if ignored: 
+            response='I ignored the double entries: %s\n' % ignored
+            await ctx.send(response)
+        if not response:  await ctx.send('Sorry, I cant come up with a response to that')
         return
     except Exception as e:
         print(e)
@@ -138,9 +140,9 @@ async def get_random(ctx, reroll: typing.Optional[int]=0):
     By clicking on the reaction you can reroll the random result.'''
     try:
         global df
-        df=load_df(ctx)
+        df=sf.load_df(ctx)
         r=randrange(len(df))
-        embed = line2embed(df,r)
+        embed = sf.line2embed(df,r)
         if not reroll:
             msg = await ctx.channel.send(embed=embed,nonce=11)
             await msg.add_reaction(chr(128257))
@@ -159,16 +161,16 @@ async def get_random(ctx, reroll: typing.Optional[int]=0):
 @bot.command(aliases=['getvote','vote'])
 async def getv(ctx, *, arg):
     '''Same as the 'get' command, but includes a reaction for each element to allow voting.'''
-    input=arg2input(arg)
-    await get_elements(ctx,input,vote=1)
+    input=sf.arg2input(arg)
+    await sf.get_elements(ctx,input,vote=1)
     return 
 
 @bot.command()
 async def get(ctx, *, arg):
     '''This returns the elements specified and separated by a comma.
     If only using the index of the elements, only a separating blankspace is needed'''
-    input=arg2input(arg)
-    await get_elements(ctx,input,vote=0)
+    input=sf.arg2input(arg)
+    await sf.get_elements(ctx,input,vote=0)
     return
 
 @bot.command(aliases=['addlinks'])
@@ -177,16 +179,16 @@ async def addlink(ctx, *, arg):
     Usage: addlink <index|name> <links>'''
     try: 
         global df
-        input=arg2input(arg)
+        input=sf.arg2input(arg)
 
-        df=load_df(ctx)
+        df=sf.load_df(ctx)
         added_link=[]
         not_found=[]
         for i in input:
             links=[]
             for m in re.finditer('https?://[^\s\n]*', i): links.append(i[m.start():m.end()])
             if links: i=i[:i.find('http')-1].strip()
-            if is_number(i):
+            if sf.is_number(i):
                 if int(i) in df.index: 
                     added_link.append(str(df.loc[int(i),'Title']))
                     df.loc[int(i),'Link']=str(df.loc[int(i),'Link']) + ' ' + ' '.join(links)
@@ -202,8 +204,8 @@ async def addlink(ctx, *, arg):
         
 
         print('links added')
-        save_df(df, ctx)
-        await edit_msg(df, ctx)
+        sf.save_df(df, ctx)
+        await sf.edit_msg(df, ctx)
         print('edited')
         response=''
         if added_link: response=response+'I added the link(s) for the following entries: %s\n' % added_link
@@ -224,10 +226,10 @@ async def sort(ctx):
     '''Sorts all elements alphabetically'''
     try:
         global df
-        df=load_df(ctx)
+        df=sf.load_df(ctx)
         df=df.sort_values('Title').reset_index(drop=True)
-        save_df(df, ctx)
-        await edit_msg(df,ctx)
+        sf.save_df(df, ctx)
+        await sf.edit_msg(df,ctx)
         await show(ctx)
         await ctx.send('List has been sorted')
         return
@@ -244,11 +246,11 @@ async def searchNFLX(ctx):
     try:
         if nflx_scraper:
             global df
-            df=load_df(ctx)
+            df=sf.load_df(ctx)
             for i in df.index:
                 df.loc[i,'Netflix']=bot.search(df.loc[i,'Title'])
-            save_df(df, ctx)
-            await edit_msg(df,ctx)
+            sf.save_df(df, ctx)
+            await sf.edit_msg(df,ctx)
             return 'Netflix links have been added'
         else:
             return 'Netflix search is deactivated in the code'
@@ -263,12 +265,12 @@ async def remove(ctx, *, arg):
     When only using the index of the elements, only a blankspace is needed to separate elements.'''
     try: 
         global df
-        input=arg2input(arg)
-        df=load_df(ctx)
+        input=sf.arg2input(arg)
+        df=sf.load_df(ctx)
         removed=[]
         not_found=[]
         for i in input:
-            if is_number(i):
+            if sf.is_number(i):
                 if int(i) in df.index: 
                     removed.append(str(df.loc[int(i),'Title']))
                     df=df.drop(int(i))
@@ -283,8 +285,8 @@ async def remove(ctx, *, arg):
         df=df.reset_index(drop=1)
 
         print('removed')
-        save_df(df, ctx)
-        await edit_msg(df, ctx)
+        sf.save_df(df, ctx)
+        await sf.edit_msg(df, ctx)
         print('edited')
         response=''
         if removed: response=response+'I removed the following entries: %s\n' % removed
@@ -304,7 +306,7 @@ async def remove(ctx, *, arg):
 async def _pin_list(ctx):
     '''Sends list as embeds and pins them. This messages are kept up-to-date''' 
     try:
-        await pin_list(ctx)
+        await sf.pin_list(ctx)
         
     except Exception as e:
         print(e)
@@ -316,7 +318,7 @@ async def _pin_list(ctx):
 async def show(ctx):
     '''Sends the list as embeds to the channel'''
     try:
-        embed_list=df2embed(load_df(ctx))
+        embed_list=sf.df2embed(sf.load_df(ctx))
         for embed in embed_list:
             await ctx.channel.send(embed=embed)
         return
@@ -325,6 +327,13 @@ async def show(ctx):
         print('The message could not be send')
         await ctx.send('The message could not be sent. List can not be shown')
         return
+
+@bot.command(name='reload',alias='update')
+@commands.check(sf.is_owner)
+async def _reload(ctx):
+    msg = await ctx.send('react to this message to reload packages',nonce=1)
+    await msg.add_reaction(chr(128260))
+    return
 
 
 #@bot.command(name='reminder', aliases=['remindme','remind'])
@@ -348,7 +357,7 @@ async def show(ctx):
 
 #    curr_date=datetime.datetime.now()
 #    content=msg.content
-#    delta = parse_timedelta(content)
+#    delta = sf.parse_timedelta(content)
 #    if delta:
 #        print(curr_date)
 #        print(delta)
