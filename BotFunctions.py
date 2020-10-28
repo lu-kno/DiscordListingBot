@@ -328,64 +328,130 @@ async def show(ctx):
         await ctx.send('The message could not be sent. List can not be shown')
         return
 
-@bot.command(name='reload',alias='update')
-@commands.check(sf.is_owner)
-async def _reload(ctx):
-    msg = await ctx.send('react to this message to reload packages',nonce=1)
-    await msg.add_reaction(chr(128260))
-    return
-
-
-#@bot.command(name='reminder', aliases=['remindme','remind'])
-#async def set_reminder(ctx, members: commands.Greedy[discord.Member], *, text='I dont know what to remind you about'):
-    
-#    def check(m):
-#        return m.author == ctx.author
-
-#    response1='When should I remind you about this? (Respond with "!" to delete the reminder. Respond with "h" for help)'
-#    await ctx.send(response1)
-#    msg = await bot.wait_for('message', check=check)
-    
-#    if msg.content=='h':
-#        await ctx.send('tell me the date in "year-month-day" format or how long to wait for in "--w --d --h --m --s" format (weeks, days, hours, minutes, seconds)')
-#        msg = await bot.wait_for('message', check=check)
-
-#    if msg.content.startswith('!'):
-#        await ctx.send("I'll try to forget this ever happened")
-#        print('Reminder canceled')
-#        return
-
-#    curr_date=datetime.datetime.now()
-#    content=msg.content
-#    delta = sf.parse_timedelta(content)
-#    if delta:
-#        print(curr_date)
-#        print(delta)
-#        set_date=curr_date+delta
-
-#    else:
-#        try: set_date=parse(content)
-#        except Exception as e:
-#            print('Date not parsed:\n'+e)
-#            await ctx.send('I could not understand that. I will ignore this reminder')
-#            return
-
-#    if set_date<curr_date:
-#        print('set_date is in the past')
-#        await ctx.send('This date is in the past. That is not how time works')
-#        return
-
-
-#    reminders.add_msg(ctx, members, text, set_date)
-
-
-#    await ctx.send(';'.join([str(set_date),str(ctx.guild.id), ctx.channel.mention, ctx.author.mention,','.join([m.mention for m in members]),text])+'\n')
-#    await ctx.send('I will remind you on {}'.format(str(set_date)))
+#@bot.command(name='reload',alias='update')
+#@commands.check(sf.is_owner)
+#async def _reload(ctx):
+#    msg = await ctx.send('react to this message to reload packages',nonce=1)
+#    await msg.add_reaction(chr(128260))
 #    return
+
+
+@bot.command(name='reminder', aliases=['remindme','remind'])
+async def set_reminder(ctx, members: commands.Greedy[discord.Member], *, text='I dont know what to remind you about'):
+    
+    #def check(m):
+    #    return m.author == ctx.author
+
+    #response1='When should I remind you about this? (Respond with "!" to delete the reminder. Respond with "h" for help)'
+    #await ctx.send(response1)
+    #msg = await bot.wait_for('message', check=check)
+    
+    #if msg.content=='h':
+    #    await ctx.send('tell me the date in "year-month-day" format or how long to wait for in "--w --d --h --m --s" format (weeks, days, hours, minutes, seconds)')
+    #    msg = await bot.wait_for('message', check=check)
+
+    #if msg.content.startswith('!'):
+    #    await ctx.send("I'll try to forget this ever happened")
+    #    print('Reminder canceled')
+    #    return
+
+    #curr_date=datetime.datetime.now()
+    #content=msg.content
+    #delta = sf.parse_timedelta(content)
+    #if delta:
+    #    print(curr_date)
+    #    print(delta)
+    #    set_date=curr_date+delta
+
+    #else:
+    #    try: set_date=parse(content)
+    #    except Exception as e:
+    #        print('Date not parsed:\n'+e)
+    #        await ctx.send('I could not understand that. I will ignore this reminder')
+    #        return
+
+    #if set_date<curr_date:
+    #    print('set_date is in the past')
+    #    await ctx.send('This date is in the past. That is not how time works')
+    #    return
+
+
+    #reminders.add_msg(ctx, members, text, set_date)
+
+
+    #await ctx.send(';'.join([str(set_date),str(ctx.guild.id), ctx.channel.mention, ctx.author.mention,','.join([m.mention for m in members]),text])+'\n')
+    #await ctx.send('I will remind you on {}'.format(str(set_date)))
+    #return
 
     
     #set reminder text
     # reminder list should be a pending list and a done list (max 10 items)
     # ask to remind tomorrow (add 1 day and move it back to the pending list) or delete it (keeps it in the done list)
+    pass
 
+muted=set()
+@bot.command(name='mute')
+async def mute(ctx, muting=None, _user=None):
+    global muted
+    try:
+        if muting==None:
+            msg = await ctx.send('react to this message to mute/unmute channel participants',nonce=2)
+            await msg.add_reaction('❌')
+            await msg.add_reaction('✔️')
+            muted=set()
+            return
+        
+        if _user is not None and not _user.voice: 
+            await ctx.message.channel.send('Make sure to be in a VC when muting.')
+            return
+
+        #if muting == 1: muted=muted.union(set(_user.voice.channel.members))
+        muted=muted.union(set(_user.voice.channel.members))
+        for m in muted: 
+            m = await m.edit(mute=muting)
+            print(m)
+        #if muting == 0: muted=set()
+
+        print('muting == {}'.format(muting))
+    except Exception as e:
+        print(e)
+        await ctx.message.channel.send('Something went wrong. Make sure to be in a VC when muting.')
+    return
+
+
+
+########################################################
+####     ##   ###   #     ##   ###  ##        ##    ####
+####  ######   #   ##  #####    ##  #####  ####   ######
+####    #####  #  ###    ###  #  #  #####  ######  #####
+####  #######     ###  #####  ##    #####  #######  ####
+####     #####   ####     ##  ###   #####  ####    #####
+########################################################
+
+@bot.event
+async def on_ready():
+    await bot.change_presence(activity=discord.Game('Python!'))
+    print('We have logged in as {0.user}'.format(bot))
+
+@bot.event
+async def on_reaction_remove(reaction,user):
+    await _on_reaction(reaction,user)
+    return
+
+@bot.event
+async def on_reaction_add(reaction,user):
+    await _on_reaction(reaction,user)
+    return
+
+async def _on_reaction(reaction, user):
+    if user == bot.user: return
+
+    if reaction.message.nonce==11: 
+        await get_random(reaction.message, 1)
+        return
+    if reaction.message.nonce==2: 
+        if reaction.emoji == '❌': await mute(reaction, muting=1, _user=user)
+        if reaction.emoji == '✔️': await mute(reaction, muting=0, _user=user)
+        return
+    return
 

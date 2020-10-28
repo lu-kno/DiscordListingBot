@@ -22,48 +22,21 @@ else:
     #bot = commands.Bot(command_prefix='b!')
 
 bot=bf.bot
-#bot = discord.Client()
 
-
-#@bot.event
-#async def on_message(message):
-#    await reminders.check()
-#    return
-
-
-
-@bot.event
-async def on_ready():
-    await bot.change_presence(activity=discord.Game('Python!'))
-    print('We have logged in as {0.user}'.format(bot))
-
-@bot.event
-async def on_reaction_add(reaction,user):
-    #global movie_list
-    if user == bot.user:
-        return
-    if reaction.message.nonce==11:
-        await bf.get_random(reaction.message, 1)
-    
-    if reaction.message.nonce==1 and user.id==config.author:
+@bot.command(name='reload',alias='update')
+@commands.check(bf.sf.is_owner)
+async def _reload(ctx):
+    try:
         if not WIP: os.system('git pull')
         importlib.reload(bf)
         importlib.reload(config)
         print(config.reload_test)
-
-    return
-
-@bot.event
-async def on_reaction_remove(reaction,user):
-    #global movie_list
-    if reaction.message.nonce==11 and user != bot.user:
-        await bf.get_random(reaction.message,1)
-    return
-
-
-
-while running:
-    try:
-        bot.run(key)
+        await ctx.send('Modules were reloaded')
     except Exception as e:
         print(e)
+        await ctx.send('Something went wrong')
+    return
+
+while running:
+    try: bot.run(key)
+    except Exception as e: print(e)
