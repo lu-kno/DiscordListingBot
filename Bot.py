@@ -5,6 +5,7 @@ import discord
 from discord.ext import commands
 import importlib
 import re
+import traceback
 
 import config
 import BotFunctions as bf
@@ -38,5 +39,8 @@ async def _reload(ctx):
     return
 
 while running:
-    try: bot.run(key)
-    except Exception as e: print(e)
+    try: 
+        bot.run(key)
+    except Exception as e: 
+        print(e)
+        traceback.print_exc()
