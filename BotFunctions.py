@@ -9,6 +9,7 @@ import typing
 import datetime
 from dateutil.parser import parse
 import asyncio
+import time
 
 from random import randrange
 from discord.ext import commands
@@ -24,7 +25,6 @@ if re.search('WIP',str(sys.argv), re.IGNORECASE) or os.path.isfile(os.path.join(
     bot = commands.Bot(command_prefix='!')
 else: 
     bot = commands.Bot(command_prefix='b!')
-
 
 class Message:
     def __init__(self, content):
@@ -87,6 +87,7 @@ class Reminders:
 test=Message('acontent')
 
 @bot.command()
+@sf.timing_val
 async def add(ctx, *, arg):
     '''Add elements separated by commas.
     You can add a link after the name and before any separating comma to include it on the list'''
@@ -135,6 +136,7 @@ async def add(ctx, *, arg):
         return 
 
 @bot.command(name='random',aliases=['r', 'get_random','getr'])
+@sf.timing_val
 async def get_random(ctx, reroll: typing.Optional[int]=0):
     '''Return a random element from the list.
     By clicking on the reaction you can reroll the random result.'''
@@ -159,6 +161,7 @@ async def get_random(ctx, reroll: typing.Optional[int]=0):
         return 'Error  getting a random entry from the list'
 
 @bot.command(aliases=['getvote','vote'])
+@sf.timing_val
 async def getv(ctx, *, arg):
     '''Same as the 'get' command, but includes a reaction for each element to allow voting.'''
     input=sf.arg2input(arg)
@@ -166,6 +169,7 @@ async def getv(ctx, *, arg):
     return 
 
 @bot.command()
+@sf.timing_val
 async def get(ctx, *, arg):
     '''This returns the elements specified and separated by a comma.
     If only using the index of the elements, only a separating blankspace is needed'''
@@ -174,11 +178,13 @@ async def get(ctx, *, arg):
     return
 
 @bot.command(aliases=['addlinks'])
+@sf.timing_val
 async def addlink(ctx, *, arg):
     '''Adds a link to an existing element from the list.
     Usage: addlink <index|name> <links>'''
     try: 
         global df
+
         input=sf.arg2input(arg)
 
         df=sf.load_df(ctx)
@@ -222,10 +228,12 @@ async def addlink(ctx, *, arg):
         return
 
 @bot.command()
+@sf.timing_val
 async def sort(ctx):
     '''Sorts all elements alphabetically'''
     try:
         global df
+
         df=sf.load_df(ctx)
         df=df.sort_values('Title').reset_index(drop=True)
         sf.save_df(df, ctx)
@@ -241,6 +249,7 @@ async def sort(ctx):
         return
 
 @bot.command()
+@sf.timing_val
 async def searchNFLX(ctx):
     '''Not Working! Search the corresponding NETFLIX link for the movie|serie titles'''
     try:
@@ -260,6 +269,7 @@ async def searchNFLX(ctx):
         return 'Error adding Netflix links'
 
 @bot.command(aliases=['rm'])
+@sf.timing_val
 async def remove(ctx, *, arg):
     '''Removes one or more elements from the list. Titles separated by commas.
     When only using the index of the elements, only a blankspace is needed to separate elements.'''
@@ -303,11 +313,11 @@ async def remove(ctx, *, arg):
         return 
 
 @bot.command(name='pin', aliases=['pin_list'])
+@sf.timing_val
 async def _pin_list(ctx):
     '''Sends list as embeds and pins them. This messages are kept up-to-date''' 
     try:
-        await sf.pin_list(ctx)
-        
+        await sf.pin_list(ctx)        
     except Exception as e:
         print(e)
         print('side Funciton error. pin failed')
@@ -315,6 +325,7 @@ async def _pin_list(ctx):
         return
 
 @bot.command()
+@sf.timing_val
 async def show(ctx):
     '''Sends the list as embeds to the channel'''
     try:
@@ -327,14 +338,6 @@ async def show(ctx):
         print('The message could not be send')
         await ctx.send('The message could not be sent. List can not be shown')
         return
-
-#@bot.command(name='reload',alias='update')
-#@commands.check(sf.is_owner)
-#async def _reload(ctx):
-#    msg = await ctx.send('react to this message to reload packages',nonce=1)
-#    await msg.add_reaction(chr(128260))
-#    return
-
 
 @bot.command(name='reminder', aliases=['remindme','remind'])
 async def set_reminder(ctx, members: commands.Greedy[discord.Member], *, text='I dont know what to remind you about'):
@@ -391,6 +394,7 @@ async def set_reminder(ctx, members: commands.Greedy[discord.Member], *, text='I
 
 muted=set()
 @bot.command(name='mute')
+@sf.timing_val
 async def mute(ctx, muting=None, _user=None):
     global muted
     try:
@@ -403,6 +407,7 @@ async def mute(ctx, muting=None, _user=None):
         
         if _user is not None and not _user.voice: 
             await ctx.message.channel.send('Make sure to be in a VC when muting.')
+            print('User waned o mute but not in VC.')
             return
 
         #if muting == 1: muted=muted.union(set(_user.voice.channel.members))
@@ -411,12 +416,31 @@ async def mute(ctx, muting=None, _user=None):
             m = await m.edit(mute=muting)
             print(m)
         #if muting == 0: muted=set()
+        print('{}muted'.format('un' if muting else ''))
 
-        print('muting == {}'.format(muting))
+        return
     except Exception as e:
         print(e)
         await ctx.message.channel.send('Something went wrong. Make sure to be in a VC when muting.')
     return
+
+
+@bot.command(name='moviesperday',aliases=['mpd','watched'])
+async def moviesperday(ctx, movies_watched):
+    try:
+        today = datetime.date.today()
+        start_of_year = datetime.date(today.year-1,12,31)
+        end_of_year = datetime.date(today.year,12,31)
+        days_past = today - start_of_year
+        days_left = end_of_year - today
+
+        ratio_left=(365-movies_watched)/days_left
+        ratio_past=movies_watched/days_past
+        await ctx.message.channel.send(f'You need to see {ratio_left} movies per day.\nYou\'ve seen in average {ratio_past} movies per day.')
+        return
+    except Exception as e:
+        print(e)
+        await ctx.message.channel.send('Something went wrong.')
 
 
 
