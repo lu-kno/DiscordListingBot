@@ -8,10 +8,55 @@ from random import randrange
 import config
 import datetime
 import asyncio
-
+import time
 
 testing_import='asdfasdfa'
 
+class TimerError(Exception):
+    """A custom exception used to report errors in use of Timer class"""
+    print(Exception)
+
+class Timer:
+    def __init__(self,name):
+        self._start_time = None
+        self.name=name
+        self.tic()
+
+    def tic(self):
+        """Start a new timer"""
+        if self._start_time is not None:
+            raise TimerError(f"Timer is running. Use .stop() to stop it")
+
+        self._start_time = time.perf_counter()
+
+    def toc(self):
+        """Stop the timer, and report the elapsed time"""
+        try:
+            if self._start_time is None:
+                raise TimerError(f"Timer is {self.name} not running. Use .start() to start it")
+
+            elapsed_time = time.perf_counter() - self._start_time
+            self._start_time = None
+            s=' for {}'.format(self.name)
+            print(f"Elapsed time{s}: {elapsed_time:0.4f} seconds")
+            return
+        except Exception as e:
+            print(e)
+            print('toc from {self.name} did not work')
+
+
+def timing_val(func): # decorator
+    def wrapper(*arg, **kw):
+        t1 = time.time()
+        res = func(*arg, **kw)
+        t2 = time.time()
+        tt = (t2-t1)*1000
+        print('Timing \t {} took {} ms'.format(func.__name__, (tt)))
+        return res
+    return wrapper
+
+
+@timing_val
 def save_df(df, message, csv=1):
     try:
         #df.to_pickle(os.path.join(config.script_path,'data',str(message.guild)+'.pck'),compression=None)
@@ -26,6 +71,8 @@ def save_df(df, message, csv=1):
         print('There was a problem saving the Data to the pickle file')
         return 'Error'
 
+
+@timing_val
 def load_df(message):
     try: 
         if os.path.isfile(os.path.join(config.script_path,'data',str(message.guild)+'.json')):
@@ -34,7 +81,6 @@ def load_df(message):
             df=pd.read_pickle(os.path.join(config.script_path,'data',str(message.guild)+'.pck'),compression=None)
         else:
             with open(os.path.join(config.script_path,'data',str(message.guild)+'.csv')) as csv: df=pd.read_csv(csv)
-
         #print('df loaded')
     except Exception as e: 
         print(e)
@@ -50,6 +96,7 @@ def load_df(message):
     df = capitalize(df)
     return df
 
+@timing_val
 async def get_elements(ctx, input, vote=0, embed_title='Watchlist'):
     try:
         global df
@@ -92,6 +139,8 @@ async def get_elements(ctx, input, vote=0, embed_title='Watchlist'):
         await ctx.send('An error ocurred getting the entry from the list')
         return
 
+    
+@timing_val
 async def edit_msg(df, ctx):
     # Maybe convert it to an 'update_pin(ctx)' function, opening the csv file again?
     '''replace the content of the pinned message of a server with the updated information'''
@@ -148,11 +197,12 @@ async def edit_msg(df, ctx):
         print('The Pinned Message could not be edited. Maybe the message hasn\'t been pinned or the pin info file is corrupt/missing.')
         return 'Message could not be edited'
 
+
+@timing_val
 async def pin_list(ctx):
     '''Sends list as embeds and pins them. This messages are kept up-to-date''' 
 
     df=load_df(ctx)
-
     try:
         embed_list = df2embed(df)
         print('embed list length %s' % len(embed_list))
@@ -187,6 +237,7 @@ async def pin_list(ctx):
         await ctx.send('Message could not be pinned')
         return
     
+@timing_val
 def line2embed(df,i):
     '''This function returns a discord embed containing the data from a dataframe in one single embed.'''
     try:
@@ -215,13 +266,13 @@ def line2embed(df,i):
         description=description + netflix_path + ' ' + link_string + '\n'
 
         embed = discord.Embed(title="Random Element", colour=discord.Colour(0xCD01BD), description=description,)
-
         return embed
     except Exception as e:
         print(e)
         print('The element from Dataframe could not be converted into a message string. Make sure the Dataframe is formatted correctly')
         return '```Error creating message```'
 
+@timing_val
 def df2embed(df,vote=0, embed_title="Watchlist"):
     '''This function returns a list of discord embeds containing the data from a dataframe separated every 10 elements'''
     try:
