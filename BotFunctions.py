@@ -15,7 +15,7 @@ from random import randrange
 from discord.ext import commands
 
 import config
-#from SideFunctions import *
+from SideFunctions import timing_val
 import SideFunctions as sf
 
 nflx_scraper=0
@@ -87,7 +87,7 @@ class Reminders:
 test=Message('acontent')
 
 @bot.command()
-@sf.timing_val
+@timing_val
 async def add(ctx, *, arg):
     '''Add elements separated by commas.
     You can add a link after the name and before any separating comma to include it on the list'''
@@ -136,7 +136,7 @@ async def add(ctx, *, arg):
         return 
 
 @bot.command(name='random',aliases=['r', 'get_random','getr'])
-@sf.timing_val
+@timing_val
 async def get_random(ctx, reroll: typing.Optional[int]=0):
     '''Return a random element from the list.
     By clicking on the reaction you can reroll the random result.'''
@@ -161,7 +161,7 @@ async def get_random(ctx, reroll: typing.Optional[int]=0):
         return 'Error  getting a random entry from the list'
 
 @bot.command(aliases=['getvote','vote'])
-@sf.timing_val
+@timing_val
 async def getv(ctx, *, arg):
     '''Same as the 'get' command, but includes a reaction for each element to allow voting.'''
     input=sf.arg2input(arg)
@@ -169,7 +169,7 @@ async def getv(ctx, *, arg):
     return 
 
 @bot.command()
-@sf.timing_val
+@timing_val
 async def get(ctx, *, arg):
     '''This returns the elements specified and separated by a comma.
     If only using the index of the elements, only a separating blankspace is needed'''
@@ -178,7 +178,7 @@ async def get(ctx, *, arg):
     return
 
 @bot.command(aliases=['addlinks'])
-@sf.timing_val
+@timing_val
 async def addlink(ctx, *, arg):
     '''Adds a link to an existing element from the list.
     Usage: addlink <index|name> <links>'''
@@ -228,7 +228,7 @@ async def addlink(ctx, *, arg):
         return
 
 @bot.command()
-@sf.timing_val
+@timing_val
 async def sort(ctx):
     '''Sorts all elements alphabetically'''
     try:
@@ -249,7 +249,7 @@ async def sort(ctx):
         return
 
 @bot.command()
-@sf.timing_val
+@timing_val
 async def searchNFLX(ctx):
     '''Not Working! Search the corresponding NETFLIX link for the movie|serie titles'''
     try:
@@ -269,7 +269,7 @@ async def searchNFLX(ctx):
         return 'Error adding Netflix links'
 
 @bot.command(aliases=['rm'])
-@sf.timing_val
+@timing_val
 async def remove(ctx, *, arg):
     '''Removes one or more elements from the list. Titles separated by commas.
     When only using the index of the elements, only a blankspace is needed to separate elements.'''
@@ -313,7 +313,7 @@ async def remove(ctx, *, arg):
         return 
 
 @bot.command(name='pin', aliases=['pin_list'])
-@sf.timing_val
+@timing_val
 async def _pin_list(ctx):
     '''Sends list as embeds and pins them. This messages are kept up-to-date''' 
     try:
@@ -325,7 +325,7 @@ async def _pin_list(ctx):
         return
 
 @bot.command()
-@sf.timing_val
+@timing_val
 async def show(ctx):
     '''Sends the list as embeds to the channel'''
     try:
@@ -394,7 +394,7 @@ async def set_reminder(ctx, members: commands.Greedy[discord.Member], *, text='I
 
 muted=set()
 @bot.command(name='mute')
-@sf.timing_val
+@timing_val
 async def mute(ctx, muting=None, _user=None):
     global muted
     try:
@@ -436,11 +436,19 @@ async def moviesperday(ctx, movies_watched):
 
         ratio_left=(365-movies_watched)/days_left
         ratio_past=movies_watched/days_past
-        await ctx.message.channel.send(f'You need to see {ratio_left} movies per day.\nYou\'ve seen in average {ratio_past} movies per day.')
+
+        message = f'''This is day {days_past}
+        You need to see {ratio_left} movies per day.
+        Your average is {ratio_past} movies per day.
+        You have {days_left} days left to watch {365-movies_watched} movies'''
+
+
+        await ctx.message.channel.send(message)
         return
     except Exception as e:
         print(e)
         await ctx.message.channel.send('Something went wrong.')
+        return
 
 
 
