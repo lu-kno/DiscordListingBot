@@ -7,6 +7,8 @@ import importlib
 import re
 import traceback
 
+import asyncio
+
 import config
 import BotFunctions as bf
 running=1
