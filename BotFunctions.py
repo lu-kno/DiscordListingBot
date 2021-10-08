@@ -428,11 +428,12 @@ async def mute(ctx, muting=None, _user=None):
 @bot.command(name='moviesperday',aliases=['mpd','watched'])
 async def moviesperday(ctx, movies_watched):
     try:
+        movies_watched=int(movies_watched)
         today = datetime.date.today()
         start_of_year = datetime.date(today.year-1,12,31)
         end_of_year = datetime.date(today.year,12,31)
-        days_past = today - start_of_year
-        days_left = end_of_year - today
+        days_past = (today - start_of_year).days
+        days_left = (end_of_year - today).days
 
         ratio_left=(365-movies_watched)/days_left
         ratio_past=movies_watched/days_past
